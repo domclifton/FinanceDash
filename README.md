@@ -1,4 +1,4 @@
-# Self-hosted Finance Tracker
+# Self-hosted Finance Tracker - AI SLOP WARNING
 
 A small Flask + SQLite finance dashboard for tracking:
 
