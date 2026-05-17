@@ -1,4 +1,4 @@
-# InvestHome Finance Tracker v2.6.0 - AI SLOP WANRING
+# InvestHome Finance Tracker v2.6.0 - AI SLOP WARNING
 
 Self-hosted Flask + SQLite finance tracker with the major modern UI redesign and the Trading 212 fork features.
 
