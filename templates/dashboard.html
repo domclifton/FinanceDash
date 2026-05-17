@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Accessible overview</p>
+        <h1>Accessible Finance Dashboard</h1>
+    </div>
+    <a class="btn btn-outline-light" href="{{ url_for('export_transactions') }}">Export CSV</a>
+</div>
+
+<div class="metric-grid">
+    {% if total_all_assets > 0 %}
+    <div class="metric-card accent"><span>Total Net Worth</span><strong>{{ total_all_assets|money }}</strong><small>Accessible + pension + property equity</small></div>
+    {% endif %}
+
+    {% if total > 0 %}
+    <div class="metric-card"><span>Accessible Net Worth</span><strong>{{ total|money }}</strong></div>
+    {% endif %}
+
+    {% if emergency > 0 %}
+    <div class="metric-card"><span>Emergency Fund</span><strong>{{ emergency|money }}</strong></div>
+    {% endif %}
+
+    {% if liquid > 0 %}
+    <div class="metric-card"><span>Liquid</span><strong>{{ liquid|money }}</strong><small>Uses account Type dropdown</small></div>
+    {% endif %}
+
+    {% if short_term > 0 %}
+    <div class="metric-card"><span>Short Term</span><strong>{{ short_term|money }}</strong></div>
+    {% endif %}
+
+    {% if mid_term > 0 %}
+    <div class="metric-card"><span>Mid Term</span><strong>{{ mid_term|money }}</strong></div>
+    {% endif %}
+
+    {% if long_term > 0 %}
+    <div class="metric-card"><span>Long Term</span><strong>{{ long_term|money }}</strong><small>Excludes pension</small></div>
+    {% endif %}
+
+    {% if pension > 0 %}
+    <div class="metric-card"><span>Pension</span><strong>{{ pension|money }}</strong><small><a href="{{ url_for('pension_dashboard') }}">View retirement dashboard</a></small></div>
+    {% endif %}
+
+    {% if property_equity > 0 %}
+    <div class="metric-card"><span>Property Equity</span><strong>{{ property_equity|money }}</strong><small><a href="{{ url_for('property_page') }}">View property</a></small></div>
+    {% endif %}
+
+    {% if total_contributions > 0 %}
+    <div class="metric-card"><span>Net Contributions</span><strong>{{ total_contributions|money }}</strong></div>
+    {% endif %}
+
+    {% if total_growth != 0 %}
+    <div class="metric-card"><span>Growth / Change</span><strong class="{{ 'positive' if total_growth >= 0 else 'negative' }}">{{ total_growth|money }}</strong><small>{{ '%.2f'|format(total_growth_pct) }}%</small></div>
+    {% endif %}
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-8">
+        <section class="panel">
+            <h5>Accessible Net Worth Over Time</h5>
+            <canvas id="netWorthChart" height="120"></canvas>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="panel">
+            <h5>Allocation</h5>
+            <canvas id="categoryChart" height="240"></canvas>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-7">
+        <section class="panel">
+            <div class="d-flex justify-content-between align-items-center"><h5>Accounts</h5><a href="{{ url_for('performance') }}" class="small">View performance</a></div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead><tr><th>Account</th><th>Category</th><th>Type</th><th class="text-end">Value</th></tr></thead>
+                    <tbody>
+                    {% for account in accounts if account.current_value > 0 %}
+                        <tr><td>{{ account.name }}</td><td>{{ account.account_type }}</td><td>{{ account.term_type }}</td><td class="text-end">{{ account.current_value|money }}</td></tr>
+                    {% else %}
+                        <tr><td colspan="4" class="muted">No accounts with a value greater than £0 yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-5">
+        <section class="panel">
+            <h5>Recent Transactions</h5>
+            {% for tx in recent_transactions %}
+                <div class="feed-item">
+                    <div><strong>{{ tx.account_name }}</strong><small>{{ tx.created_at }}</small></div>
+                    <span class="{{ 'positive' if tx.amount >= 0 else 'negative' }}">{{ tx.amount|money }}</span>
+                </div>
+            {% else %}
+                <p class="muted">No transactions yet.</p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+
+<script>
+const labels = {{ labels | safe }};
+const netWorthData = {{ networth_data | safe }};
+const categoryLabels = {{ category_labels | safe }};
+const categoryData = {{ category_data | safe }};
+
+new Chart(document.getElementById('netWorthChart'), {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Accessible Net Worth', data: netWorthData, tension: 0.35, fill: true }] },
+    options: { plugins: { legend: { labels: { color: '#475467' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { ticks: { color: '#667085' } }, y: { ticks: { color: '#667085', callback: value => '£' + Number(value).toLocaleString() } } } }
+});
+
+new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: { labels: categoryLabels, datasets: [{ data: categoryData }] },
+    options: { plugins: { legend: { labels: { color: '#475467' } } } }
+});
+</script>
+{% endblock %}

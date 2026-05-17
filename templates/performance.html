@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Performance</p>
+        <h1>Investment Growth Over Time</h1>
+        <p class="muted mb-0">Blue shows your money paid in. Green shows the current value. When green sits above blue, you are in profit.</p>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+{% for chart in charts %}
+    <div class="col-12">
+        <section class="panel performance-panel">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <h5 class="mb-1">{{ chart.title }}</h5>
+                    <p class="muted mb-0">{{ chart.account_name }}</p>
+                </div>
+                <div class="mini-metrics">
+                    <div><span>Current Value</span><strong>{{ chart.current_value|money }}</strong></div>
+                    <div><span>Contributions</span><strong>{{ chart.current_contributions|money }}</strong></div>
+                    <div><span>Growth</span><strong class="{{ 'positive' if chart.current_growth >= 0 else 'negative' }}">{{ chart.current_growth|money }}</strong></div>
+                    <div><span>Growth %</span><strong class="{{ 'positive' if chart.current_growth_pct >= 0 else 'negative' }}">{{ '%.2f'|format(chart.current_growth_pct) }}%</strong></div>
+                </div>
+            </div>
+
+            <div class="performance-legend">
+                <span><i class="legend-blue"></i>Contributions / Money In</span>
+                <span><i class="legend-green"></i>Current Value</span>
+            </div>
+
+            <div class="svg-chart-wrap">
+                <svg viewBox="0 0 {{ chart.svg.width }} {{ chart.svg.height }}" preserveAspectRatio="none" role="img" aria-label="{{ chart.title }} chart">
+                    <rect x="0" y="0" width="{{ chart.svg.width }}" height="{{ chart.svg.height }}" fill="transparent"></rect>
+
+                    {% for tick in chart.svg.ticks %}
+                        <line x1="{{ chart.svg.left }}" y1="{{ tick.y }}" x2="{{ chart.svg.plot_right }}" y2="{{ tick.y }}" class="chart-grid"></line>
+                        <text x="8" y="{{ tick.y + 4 }}" class="chart-label">{{ tick.label }}</text>
+                    {% endfor %}
+
+                    {% for tick in chart.svg.x_ticks %}
+                        <line x1="{{ tick.x }}" y1="{{ chart.svg.top }}" x2="{{ tick.x }}" y2="{{ chart.svg.plot_bottom }}" class="chart-grid-vertical"></line>
+                        <text x="{{ tick.x }}" y="{{ chart.svg.height - 12 }}" text-anchor="middle" class="chart-label">{{ tick.label }}</text>
+                    {% endfor %}
+
+                    {% if chart.svg.fill_polygon %}
+                        <polygon points="{{ chart.svg.fill_polygon }}" class="chart-profit-fill"></polygon>
+                    {% endif %}
+
+                    {% if chart.svg.contribution_polyline %}
+                        <polyline points="{{ chart.svg.contribution_polyline }}" class="chart-line chart-line-blue"></polyline>
+                        {% for point in chart.svg.contribution_points %}
+                            <circle cx="{{ point.x }}" cy="{{ point.y }}" r="4" class="chart-dot-blue"></circle>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if chart.svg.value_polyline %}
+                        <polyline points="{{ chart.svg.value_polyline }}" class="chart-line chart-line-green"></polyline>
+                        {% for point in chart.svg.value_points %}
+                            <circle cx="{{ point.x }}" cy="{{ point.y }}" r="4" class="chart-dot-green"></circle>
+                        {% endfor %}
+                    {% endif %}
+                </svg>
+            </div>
+        </section>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Retirement only</p>
+        <h1>Pension Dashboard</h1>
+        <p class="muted mb-0">Kept separate from your accessible net worth because this money is locked away until retirement age.</p>
+    </div>
+    <a class="btn btn-outline-light" href="{{ url_for('accounts') }}">Update Pension Value</a>
+</div>
+
+<div class="metric-grid">
+    <div class="metric-card accent"><span>Total Pension Value</span><strong>{{ summary.total_current|money }}</strong></div>
+    <div class="metric-card"><span>Contributed / Baseline</span><strong>{{ summary.total_contributions|money }}</strong></div>
+    <div class="metric-card"><span>Growth / Change</span><strong class="{{ 'positive' if summary.total_growth >= 0 else 'negative' }}">{{ summary.total_growth|money }}</strong><small>{{ '%.2f'|format(summary.total_growth_pct) }}%</small></div>
+    <div class="metric-card"><span>Accessibility</span><strong>Locked</strong><small>Excluded from main dashboard</small></div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-8">
+        <section class="panel">
+            <h5>Pension Value Over Time</h5>
+            <canvas id="pensionChart" height="120"></canvas>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="panel">
+            <h5>Monthly Pension Changes</h5>
+            <canvas id="monthlyChart" height="220"></canvas>
+        </section>
+    </div>
+</div>
+
+<section class="panel mt-4">
+    <h5>Pension Accounts</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Account</th><th class="text-end">Current</th><th class="text-end">Contributed / Baseline</th><th class="text-end">Growth</th><th>Update Total Value</th></tr></thead>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td class="text-end">{{ row.current_value|money }}</td>
+                    <td class="text-end">{{ row.net_contributions|money }}</td>
+                    <td class="text-end {{ 'positive' if row.growth >= 0 else 'negative' }}">{{ row.growth|money }} <small>({{ '%.2f'|format(row.growth_pct) }}%)</small></td>
+                    <td>
+                        <form method="post" action="{{ url_for('update_account_value') }}" class="d-flex gap-2">
+                            <input type="hidden" name="account_id" value="{{ row.id }}">
+                            <input class="form-control form-control-sm" name="new_value" type="number" step="0.01" placeholder="New total" required>
+                            <input class="form-control form-control-sm" name="note" placeholder="e.g. Annual statement">
+                            <button class="btn btn-sm btn-primary">Update</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5" class="muted">No pension account yet. Add one from Accounts.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel mt-4">
+    <h5>Recent Pension Activity</h5>
+    {% for tx in recent_transactions %}
+        <div class="feed-item">
+            <div><strong>{{ tx.account_name }}</strong><small>{{ tx.created_at }}{% if tx.note %} — {{ tx.note }}{% endif %}</small></div>
+            <span class="{{ 'positive' if tx.amount >= 0 else 'negative' }}">{{ tx.amount|money }}</span>
+        </div>
+    {% else %}
+        <p class="muted">No pension transactions yet.</p>
+    {% endfor %}
+</section>
+
+<script>
+const labels = {{ labels | safe }};
+const pensionData = {{ pension_data | safe }};
+const monthlyLabels = {{ monthly_labels | safe }};
+const monthlyContributions = {{ monthly_contributions | safe }};
+const monthlyValueChanges = {{ monthly_value_changes | safe }};
+
+new Chart(document.getElementById('pensionChart'), {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Pension Value', data: pensionData, tension: 0.35, fill: true }] },
+    options: { plugins: { legend: { labels: { color: '#475467' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { ticks: { color: '#667085' } }, y: { ticks: { color: '#667085', callback: value => '£' + Number(value).toLocaleString() } } } }
+});
+
+new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: { labels: monthlyLabels, datasets: [{ label: 'Contributions', data: monthlyContributions }, { label: 'Value Updates', data: monthlyValueChanges }] },
+    options: { plugins: { legend: { labels: { color: '#475467' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { ticks: { color: '#667085' } }, y: { ticks: { color: '#667085', callback: value => '£' + Number(value).toLocaleString() } } } }
+});
+</script>
+{% endblock %}

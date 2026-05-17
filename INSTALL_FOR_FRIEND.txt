@@ -1,0 +1,114 @@
+FINANCE TRACKER - SIMPLE INSTALL GUIDE
+=====================================
+
+This package is a self-hosted Python/Flask finance tracker using SQLite.
+It includes:
+- Main finance dashboard
+- Accounts and transactions
+- Performance charts
+- Pension dashboard
+- Budget - Solo
+- Budget - Couple
+- Compound interest calculator
+- Bullion tracker
+
+Recommended install target:
+- Debian/Ubuntu LXC, VM, or small Linux server
+
+1) Install system packages
+--------------------------
+Run these commands on the server:
+
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip unzip
+
+2) Upload and unzip the app
+---------------------------
+Upload the zip file to your server, then run:
+
+unzip finance_tracker_app_budget_solo_couple.zip
+cd ft_svgfix
+
+3) Create Python virtual environment
+------------------------------------
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+4) Optional: configure metal prices
+-----------------------------------
+cp .env.example .env
+
+You can edit .env if you have a GoldAPI key.
+The app will still work without one using manual fallback prices.
+
+5) Start the app
+----------------
+python3 app.py
+
+Then open in a browser:
+
+http://SERVER-IP:5000
+
+6) Stop the app
+---------------
+If running in the foreground, press:
+
+CTRL + C
+
+7) Restart the app
+------------------
+cd ft_svgfix
+source venv/bin/activate
+python3 app.py
+
+8) Reset the app/database
+-------------------------
+This deletes all saved finance data:
+
+pkill -f "python3 app.py"
+cd ft_svgfix
+rm finance.db
+source venv/bin/activate
+python3 app.py
+
+9) Backup the database
+----------------------
+Before upgrading or testing changes:
+
+cp finance.db finance_backup_$(date +%F).db
+
+10) Upgrade existing install
+----------------------------
+To update an existing install:
+
+- Stop the app
+- Backup finance.db
+- Copy/overwrite the app files
+- Keep the existing finance.db
+- Start the app again
+
+Example:
+
+pkill -f "python3 app.py"
+cp finance.db finance_backup_$(date +%F).db
+source venv/bin/activate
+python3 app.py
+
+Notes
+-----
+- Budget - Solo is the original single-income budget calculator.
+- Budget - Couple lets two people enter separate incomes, create joint/person-specific budget streams, then shows combined income and floating money left.
+- SQLite is fine for a single-user self-hosted app.
+- If you see "database is locked", make sure only one copy of app.py is running.
+
+
+NEW: Property page
+- Enter current home value and mortgage remaining.
+- The app calculates equity and loan-to-value automatically.
+
+
+Version info
+------------
+The app version is shown in the sidebar and stored in VERSION.txt.
+When updating the app, overwrite the files but keep finance.db if you want to keep your data.

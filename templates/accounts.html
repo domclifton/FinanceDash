@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><div><p class="eyebrow">Manage</p><h1>Accounts</h1></div></div>
+
+<section class="panel mb-4">
+    <h5>Add Account</h5>
+    <form method="post" action="{{ url_for('add_account') }}" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small muted">Account name</label>
+            <input class="form-control" name="name" placeholder="e.g. House Deposit" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small muted">Existing type</label>
+            <select class="form-select" name="account_type">
+                {% for type in account_types %}<option>{{ type }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small muted">Or create manual account</label>
+            <input class="form-control" name="new_account_type" placeholder="e.g. House Deposit, Crypto, Car Fund">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small muted">Type</label>
+            <select class="form-select" name="term_type">
+                {% for term in term_types %}<option>{{ term }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small muted">Starting value</label>
+            <input class="form-control" name="starting_value" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div class="col-md-1"><button class="btn btn-primary w-100">Add</button></div>
+    </form>
+    <p class="small muted mt-2 mb-0">The account name/category stays as-is; the Type dropdown controls dashboard buckets: Emergency, Liquid, Short Term, Mid Term or Long Term.</p>
+</section>
+
+<section class="panel">
+    <h5>Account Balances</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Name</th><th>Category</th><th>Type</th><th class="text-end">Value</th><th>Add / Remove</th><th>Update Total Value</th></tr></thead>
+            <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td>{{ account.name }}</td>
+                <td>{{ account.account_type }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('update_account_term') }}" class="d-flex gap-2">
+                        <input type="hidden" name="account_id" value="{{ account.id }}">
+                        <select class="form-select form-select-sm" name="term_type" onchange="this.form.submit()">
+                            {% for term in term_types %}
+                            <option value="{{ term }}" {% if account.term_type == term %}selected{% endif %}>{{ term }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </td>
+                <td class="text-end">{{ account.current_value|money }}</td>
+                <td>
+                    {% if account.account_type != 'Physical Bullion' %}
+                    <form method="post" action="{{ url_for('add_transaction') }}" class="d-flex gap-2">
+                        <input type="hidden" name="account_id" value="{{ account.id }}">
+                        <select class="form-select form-select-sm" name="transaction_type"><option value="add">Add</option><option value="remove">Remove</option></select>
+                        <input class="form-control form-control-sm" name="amount" type="number" step="0.01" placeholder="Amount" required>
+                        <input class="form-control form-control-sm" name="note" placeholder="Note">
+                        <button class="btn btn-sm btn-success">Save</button>
+                    </form>
+                    {% else %}
+                    <span class="muted">Calculated from bullion inventory</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if account.account_type != 'Physical Bullion' %}
+                    <form method="post" action="{{ url_for('update_account_value') }}" class="d-flex gap-2">
+                        <input type="hidden" name="account_id" value="{{ account.id }}">
+                        <input class="form-control form-control-sm" name="new_value" type="number" step="0.01" placeholder="New total" required>
+                        <input class="form-control form-control-sm" name="note" placeholder="Reason e.g. market update">
+                        <button class="btn btn-sm btn-primary">Update</button>
+                    </form>
+                    {% else %}
+                    <span class="muted">Update bullion holdings/prices</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

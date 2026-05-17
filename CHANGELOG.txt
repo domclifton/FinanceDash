@@ -1,0 +1,216 @@
+Version 1.20.0 - Minor
+----------------------
+- Added Emergency as a selectable account Type on the Accounts page.
+- Dashboard Emergency Fund total is now driven by the Type dropdown, not just the account category/name.
+- Allocation chart now includes Emergency as its own bucket when value is greater than £0.
+- Existing accounts can be manually changed to Emergency without recreating them.
+- Download folder/package renamed to finance_tracker_v1.20.0.
+
+Version 1.19.0 - Minor
+- Changed the snapshot status/version text under the Take Snapshot button from white to dark grey for better readability.
+- Download folder/package renamed to finance_tracker_v1.19.0.
+
+Finance Tracker - Change List / Update History
+=============================================
+
+This file tracks the main feature changes and iterations made while building the self-hosted Flask finance tracker.
+
+Latest package
+--------------
+- Version: 1.17.0
+- Added VERSION.txt to the project root.
+- Added visible version number in the sidebar.
+- Version number should now be incremented with every app addition/update.
+- Added this CHANGELOG.txt file so changes are visible in the project folder.
+- App-wide font changed to Helvetica.
+- Property page fixed so the property_settings table is created before default values are inserted.
+
+Update history
+--------------
+
+1. Initial Flask + SQLite finance tracker
+- Created the first self-hosted Python/Flask/SQLite app.
+- Added account tracking for:
+  - Emergency Fund
+  - Cash ISA
+  - Stocks and Shares ISA
+  - Premium Bonds
+  - Physical Bullion
+- Added add/remove transaction logic.
+- Added account snapshots for charting value over time.
+
+2. Investbrain-style UI
+- Added dashboard-style layout inspired by Investbrain.
+- Added sidebar navigation.
+- Added dashboard cards.
+- Added account/category summary views.
+- Added chart support for net worth and allocations.
+
+3. Physical Bullion tracking
+- Added bullion inventory page.
+- Added gold/silver item tracking.
+- Added metal, weight, purity, quantity and purchase price fields.
+- Added optional live metal pricing via GoldAPI.
+- Added manual fallback prices.
+- Added current value and profit/loss calculations.
+- Later changed purchase cost to optional so bullion can be added without entering purchase cost.
+
+4. Light modern UI
+- Changed from very dark UI to a lighter modern layout.
+- Updated cards, sidebar and table styling.
+
+5. Performance tracking
+- Added Performance page.
+- Added contribution tracking versus value changes.
+- Added ability to update total asset value without treating it as a new contribution.
+- Added growth/change calculations.
+
+6. Pension tracking
+- Added Pension as an account type.
+- Added pension value tracking.
+- Later separated Pension into its own dashboard because it is not accessible until retirement.
+- Main dashboard now focuses on accessible net worth.
+- Pension dashboard tracks pension value separately.
+
+7. Manual account types and term classifications
+- Added ability to create manual account types.
+- Added editable Type dropdown for accounts:
+  - Liquid
+  - Short Term
+  - Mid Term
+  - Long Term
+- Added dashboard totals for:
+  - Emergency Fund
+  - Liquid
+  - Short Term
+  - Mid Term
+  - Long Term
+  - Pension separately
+
+8. SQLite stability fixes
+- Added SQLite timeout support.
+- Reduced lock issues caused by repeated requests/debug reloader.
+- Fixed bullion delete route where cur was referenced before being created.
+
+9. Budget pages
+- Added Budget page.
+- Added manual income entry.
+- Added manually editable budget topics and amounts.
+- Added calculated floating amount left over.
+- Renamed original budget page to Budget - Solo.
+- Added Budget - Couple page with:
+  - Person 1 income
+  - Person 2 income
+  - Combined income
+  - Joint budget stream
+  - Person 1 budget stream
+  - Person 2 budget stream
+  - Combined floating left total
+
+10. Compound interest page
+- Added compound interest calculator page.
+- Uses current stored values from:
+  - Pension
+  - Lifetime ISA
+  - Stocks and Shares ISA
+- Added configurable annual growth percentage.
+- Added configurable years/months.
+- Added configurable monthly contribution per account.
+- Added configurable annual contribution increase percentage.
+- Updated settings so entered values persist until manually changed.
+- Added current value overlay for Pension, Lifetime ISA and Stocks and Shares ISA.
+
+11. Performance chart redesign
+- Changed performance charts to focus only on:
+  - Stocks and Shares ISA
+  - Lifetime ISA
+  - Pension
+- Changed chart logic from Growth line to Current Value line.
+- Blue line = contributions / money paid in.
+- Green line = current value.
+- Gap between the lines = growth or loss.
+- Replaced broken Chart.js performance charts with server-rendered SVG charts for reliability.
+
+12. Lifetime ISA bonus logic
+- Added Lifetime ISA bonus behaviour.
+- Lifetime ISA deposits automatically add 25% as growth.
+- Example:
+  - Add £100 contribution
+  - Contributions increase by £100
+  - Growth/bonus increases by £25
+  - Current value increases by £125
+- This treats the government bonus as growth, as requested.
+
+13. Number formatting
+- Added comma formatting across the app.
+- Examples:
+  - £1,250.00
+  - £36,578.72
+  - £1,000,000.00
+- Updated chart values/tooltips where applicable.
+
+14. Property page
+- Added Property page.
+- Added current home value field.
+- Added mortgage remaining field.
+- Added automatic equity calculation:
+  Equity = Home Value - Mortgage Remaining
+- Added loan-to-value percentage.
+- Added equity breakdown display.
+
+15. Install/friend package improvements
+- Added INSTALL_FOR_FRIEND.txt.
+- Added README guidance.
+- Packaged app into drag-and-drop zip files for deployment on an LXC.
+- Added reset and backup guidance for finance.db.
+
+Notes
+-----
+- The app uses SQLite and stores data locally in finance.db.
+- To reset the app, stop Flask and delete finance.db.
+- To preserve data between updates, overwrite app files but keep finance.db.
+- For best stability, run Flask without debug reloader in production/testing.
+
+16. Dashboard total net worth visibility
+- Added Total Net Worth card on the main dashboard.
+- Total Net Worth now includes:
+  - Accessible accounts
+  - Pension
+  - Property equity
+- Property equity is calculated as home value minus mortgage remaining.
+- Dashboard metric cards now only display when their value is greater than £0.
+- Dashboard account list now only shows accounts with a value greater than £0.
+
+
+17. Version number
+- Added APP_VERSION inside app.py.
+- Added version display in the sidebar footer.
+- Added VERSION.txt in the project folder.
+- Added a versioning rule so each new packaged update gets a new version number.
+
+
+18. v1.18.0 - Snapshot automation
+- Added automatic once-per-day snapshot when the app is opened.
+- Manual Take Snapshot remains available.
+- Same-day duplicate snapshots are prevented by updating the existing daily snapshot.
+- Added “Last snapshot” status under the snapshot button.
+- Moved the visible version number under the snapshot controls.
+- Package/folder naming now follows the app version.
+
+19. v1.19.0 - Snapshot text colour
+- Minor update.
+- Changed the snapshot status/version text under the Take Snapshot button from white to dark grey for better visibility on the light UI.
+- Updated VERSION.txt and package/folder naming to v1.19.0.
+
+20. v1.20.0 - Emergency type selection
+- Minor update.
+- Added Emergency as a selectable Type on the Accounts page.
+- Dashboard Emergency Fund total is now driven by the Type dropdown rather than only the account/category name.
+- Allocation chart now includes Emergency as its own bucket.
+- Existing accounts can be changed to Emergency without recreating them.
+- Updated VERSION.txt and package/folder naming to v1.20.0.
+
+21. v1.20.1 - Changelog fix
+- Bug fix.
+- Restored missing changelog entries for v1.19.0 and v1.20.0.
+- Updated VERSION.txt and package/folder naming to v1.20.1.
