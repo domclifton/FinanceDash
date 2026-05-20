@@ -1,3 +1,36 @@
+v2.7.2 - Version Display Fix
+- Fixed duplicate 'v' prefix in the displayed application version.
+- Standardised stored version values to remove the extra prefix.
+
+v2.7.1 - Budget Snapshot Mobile Layout
+- Updated the dashboard Budget Snapshot section on mobile.
+- Solo Budget and Couple Budget now display side-by-side in a compact 1x2 grid.
+- Applied a narrow CSS-only override to avoid affecting the rest of the dashboard layout.
+
+v2.7.0 - Mobile Dashboard Summary Grid
+- Kept Total Net Worth as a full-width dashboard card on mobile.
+- Arranged Mid Term, Long Term, Pension, and Property Equity into a compact 2x2 grid on mobile.
+- Improved mobile dashboard information density without changing desktop layout.
+
+## v2.6.9 - Mobile metric card grid refinement
+
+- Updated mobile performance summary cards to display in a compact two-column grid.
+- Applied the compact metric layout consistently across all performance chart sections.
+- Improved spacing and readability for Current Value, Contributions, Growth, and Growth % cards on small screens.
+- Updated APP_VERSION, VERSION.txt, README, install notes, and release notes.
+
+## v2.6.8 - Mobile friendly UI
+- Added a mobile header with a slide-out navigation menu for small screens.
+- Improved dashboard, cards, settings, Trading 212, and table layouts on phones and tablets.
+- Added mobile-safe spacing, touch-friendly controls, and horizontal scrolling for wide tables/charts.
+- Kept desktop layout unchanged.
+- Updated APP_VERSION, VERSION.txt, README, install notes, and release notes.
+
+## v2.6.7 - Dashboard growth colour fix
+- Fixed the dashboard Investment Growth value so negative growth displays in red instead of green.
+- Positive growth still displays in green and zero remains neutral through the existing dashboard styling.
+- Updated APP_VERSION and VERSION.txt.
+
 ## v2.6.6 - Trading 212 credentials UI cleanup
 - Removed .env fallback wording from the Trading 212 settings page.
 - Removed the Credential Source status from Settings.

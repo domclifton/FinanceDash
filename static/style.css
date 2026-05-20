@@ -242,3 +242,390 @@ html[data-theme="dark"] .form-select-sm option{
 
 /* Trading 212 credentials settings */
 .form-hint{font-size:12px;color:var(--muted);margin-top:4px}.connection-form .form-check-label{font-weight:600;color:var(--muted);font-size:13px}html[data-theme="dark"] .form-hint,html[data-theme="dark"] .connection-form .form-check-label{color:#94a3b8}
+
+/* v2.6.8 mobile friendly UI */
+.mobile-shell-bar,
+.mobile-nav-backdrop{display:none}
+
+@media(max-width:900px){
+    html,body{width:100%;max-width:100%;overflow-x:hidden}
+    body{font-size:14px;padding-top:68px}
+
+    .mobile-shell-bar{
+        position:fixed;
+        inset:0 0 auto 0;
+        height:68px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 16px;
+        background:rgba(255,255,255,.92);
+        border-bottom:1px solid var(--line);
+        backdrop-filter:blur(18px);
+        z-index:60;
+        box-shadow:var(--shadow-soft);
+    }
+    .mobile-brand{display:flex;align-items:center;gap:10px;color:var(--text);font-size:20px;font-weight:850;letter-spacing:-.04em}
+    .mobile-brand span span{color:var(--blue)}
+    .mobile-menu-toggle{
+        width:44px;
+        height:44px;
+        border:1px solid var(--line);
+        background:var(--surface);
+        color:var(--text);
+        border-radius:14px;
+        font-size:22px;
+        font-weight:800;
+        display:grid;
+        place-items:center;
+        box-shadow:var(--shadow-soft);
+    }
+
+    .sidebar{
+        position:fixed!important;
+        top:0;
+        bottom:0;
+        left:0;
+        width:min(84vw,320px)!important;
+        height:100vh!important;
+        transform:translateX(-105%);
+        transition:transform .22s ease;
+        z-index:80;
+        padding:22px 18px;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        box-shadow:24px 0 60px rgba(15,23,42,.18);
+    }
+    body.mobile-nav-open .sidebar{transform:translateX(0)}
+    .mobile-nav-backdrop{
+        position:fixed;
+        inset:0;
+        background:rgba(15,23,42,.45);
+        z-index:70;
+        opacity:0;
+        pointer-events:none;
+        transition:opacity .22s ease;
+        display:block;
+    }
+    body.mobile-nav-open .mobile-nav-backdrop{opacity:1;pointer-events:auto}
+    body.mobile-nav-open{overflow:hidden}
+
+    .sidebar .brand{margin-bottom:20px}
+    .nav-list{gap:6px}
+    .nav-list a{min-height:46px}
+    .sidebar-sync-card{margin-top:18px}
+
+    .main{margin-left:0!important;padding:16px!important;width:100%;max-width:100%}
+    .snapshot-floating{position:static!important;text-align:left!important;margin:0 0 14px;display:grid;gap:6px}
+    .snapshot-floating form,.snapshot-floating .btn-snapshot{width:100%}
+    .version-text,.snapshot-status{text-align:left;margin-top:0}
+    .alerts{margin-right:0!important}
+
+    .page-title-block,.page-header{
+        padding-right:0!important;
+        margin-top:4px;
+        margin-bottom:16px;
+        display:block;
+    }
+    .page-title-block h1,.page-header h1{font-size:26px;line-height:1.08;margin-bottom:6px}
+    .page-title-block p,.page-header p{font-size:14px}
+
+    .modern-kpi-grid,
+    .dashboard-grid,
+    .metric-grid,
+    .metric-grid.small-grid,
+    .settings-grid,
+    .t212-page-grid,
+    .budget-cards,
+    .quick-actions{
+        grid-template-columns:1fr!important;
+        gap:12px!important;
+    }
+
+    .mini-metrics{
+        width:100%;
+        min-width:0!important;
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:10px!important;
+        margin-top:8px;
+    }
+    .mini-metrics div{
+        padding:12px!important;
+        min-width:0;
+        text-align:center;
+    }
+    .mini-metrics span{font-size:12px;line-height:1.2}
+    .mini-metrics strong{font-size:18px;line-height:1.15;word-break:break-word}
+    .networth-panel,.allocation-panel,.holdings-card,.t212-holdings-wide{grid-column:auto!important}
+    .kpi-large{grid-row:auto;min-height:auto}
+    .kpi-card,.metric-card,.glass-card,.panel,.card{border-radius:16px!important;padding:16px!important;min-width:0;max-width:100%;overflow-x:auto}
+    .kpi-card{align-items:flex-start}.kpi-icon{width:46px;height:46px;font-size:20px}.kpi-card strong{font-size:22px}
+
+    .two-stat,.three-stat,.property-row{display:grid;grid-template-columns:1fr;gap:12px}
+    .transaction-row{grid-template-columns:34px 1fr;gap:10px}.transaction-row > :last-child{grid-column:2;text-align:left!important}
+    .quick-actions a{min-height:68px}
+
+    .table{min-width:620px}
+    .svg-chart-wrap{overflow-x:auto}.svg-chart-wrap svg.performance-svg{min-width:680px}
+    canvas{max-width:100%!important;height:auto!important}
+
+    .theme-mode-switch,.mode-switch{display:flex;width:100%;flex-wrap:wrap}.theme-choice,.mode-switch a{flex:1;justify-content:center;text-align:center}
+    input,select,textarea,.form-control,.form-select,.btn{min-height:44px;font-size:16px}
+}
+
+@media(max-width:520px){
+    body{padding-top:62px}
+    .mobile-shell-bar{height:62px;padding:10px 12px}.mobile-brand{font-size:18px}.mobile-menu-toggle{width:42px;height:42px}
+    .main{padding:12px!important}.page-title-block h1,.page-header h1{font-size:24px}
+    .kpi-card,.metric-card,.glass-card,.panel,.card{padding:14px!important}
+    .mini-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+    .mini-metrics div{padding:10px 8px!important}
+    .mini-metrics strong{font-size:16px}
+    .table{min-width:560px}
+}
+
+html[data-theme="dark"] .mobile-shell-bar{background:rgba(17,24,39,.92);border-bottom-color:var(--line)}
+html[data-theme="dark"] .mobile-menu-toggle{background:#111827;border-color:var(--line);color:var(--text)}
+html[data-theme="dark"] .mobile-brand{color:var(--text)}
+
+/* v2.7.0 dashboard mobile summary grid fix
+   Override the earlier mobile rule that stacked every KPI card in one column. */
+@media(max-width:900px){
+    .modern-kpi-grid{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:12px!important;
+        align-items:stretch;
+    }
+
+    .modern-kpi-grid .kpi-large{
+        grid-column:1 / -1!important;
+        grid-row:auto!important;
+        min-height:auto!important;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large){
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:flex-start!important;
+        justify-content:flex-start!important;
+        gap:10px!important;
+        min-height:168px!important;
+        padding:16px!important;
+        overflow:hidden!important;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) .kpi-icon{
+        width:48px!important;
+        height:48px!important;
+        flex:0 0 48px!important;
+        font-size:20px!important;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) > div:last-child{
+        min-width:0;
+        width:100%;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) span{
+        font-size:15px!important;
+        line-height:1.2!important;
+        white-space:normal;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) strong{
+        font-size:clamp(1.35rem,5.5vw,2rem)!important;
+        line-height:1.08!important;
+        word-break:normal;
+        overflow-wrap:normal;
+        white-space:nowrap;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) small{
+        font-size:13px!important;
+        line-height:1.25!important;
+    }
+}
+
+@media(max-width:390px){
+    .modern-kpi-grid{
+        gap:10px!important;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large){
+        min-height:154px!important;
+        padding:14px!important;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) strong{
+        font-size:clamp(1.15rem,5vw,1.55rem)!important;
+    }
+
+    .modern-kpi-grid .kpi-card:not(.kpi-large) span,
+    .modern-kpi-grid .kpi-card:not(.kpi-large) small{
+        font-size:12px!important;
+    }
+}
+
+/* v2.7.0 final dashboard mobile summary grid
+   Explicitly targets dashboard KPI markup. Total Net Worth remains full width;
+   Mid Term, Long Term, Pension and Property Equity render as a 2x2 mobile grid. */
+@media screen and (max-width:900px){
+    .modern-kpi-grid:has(.dashboard-secondary-kpi){
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:12px!important;
+        width:100%!important;
+    }
+
+    .modern-kpi-grid .dashboard-net-worth-card{
+        grid-column:1 / -1!important;
+        grid-row:auto!important;
+        width:100%!important;
+        min-height:auto!important;
+        flex-direction:row!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi{
+        grid-column:auto!important;
+        width:100%!important;
+        min-width:0!important;
+        min-height:164px!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:flex-start!important;
+        justify-content:flex-start!important;
+        gap:10px!important;
+        padding:16px!important;
+        overflow:hidden!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi .kpi-icon{
+        width:48px!important;
+        height:48px!important;
+        flex:0 0 48px!important;
+        font-size:20px!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi > div:last-child{
+        min-width:0!important;
+        width:100%!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi span{
+        font-size:15px!important;
+        line-height:1.2!important;
+        white-space:normal!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi strong{
+        font-size:clamp(1.25rem,5vw,1.75rem)!important;
+        line-height:1.08!important;
+        white-space:nowrap!important;
+        overflow:visible!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi small{
+        font-size:13px!important;
+        line-height:1.25!important;
+        white-space:normal!important;
+    }
+}
+
+@media screen and (max-width:520px){
+    .modern-kpi-grid:has(.dashboard-secondary-kpi){
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:10px!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi{
+        min-height:150px!important;
+        padding:14px!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi .kpi-icon{
+        width:44px!important;
+        height:44px!important;
+        flex-basis:44px!important;
+        font-size:18px!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi span,
+    .modern-kpi-grid .dashboard-secondary-kpi small{
+        font-size:12px!important;
+    }
+
+    .modern-kpi-grid .dashboard-secondary-kpi strong{
+        font-size:clamp(1.05rem,4.7vw,1.45rem)!important;
+    }
+}
+
+/* Fallback for browsers without :has() support */
+@media screen and (max-width:900px){
+    .modern-kpi-grid.dashboard-mobile-grid{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:12px!important;
+    }
+}
+
+/* v2.7.1 Budget Snapshot mobile layout
+   Narrow override only: keeps Solo and Couple budget chips side-by-side on mobile.
+   This intentionally targets the Budget Snapshot card inside .side-stack only. */
+@media screen and (max-width:900px){
+    .dashboard-grid .side-stack .budget-cards{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:12px!important;
+        align-items:stretch!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip{
+        min-width:0!important;
+        width:100%!important;
+        padding:14px!important;
+        border-radius:14px!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip strong,
+    .dashboard-grid .side-stack .budget-cards .budget-chip span,
+    .dashboard-grid .side-stack .budget-cards .budget-chip b{
+        display:block!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip strong{
+        font-size:13px!important;
+        line-height:1.2!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip span{
+        font-size:12px!important;
+        line-height:1.2!important;
+        white-space:normal!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip b{
+        font-size:clamp(1rem,4.5vw,1.45rem)!important;
+        line-height:1.1!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+    }
+}
+
+@media screen and (max-width:390px){
+    .dashboard-grid .side-stack .budget-cards{
+        gap:10px!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip{
+        padding:12px 10px!important;
+    }
+
+    .dashboard-grid .side-stack .budget-cards .budget-chip b{
+        font-size:clamp(.95rem,4vw,1.25rem)!important;
+    }
+}
+

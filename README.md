@@ -1,4 +1,4 @@
-# InvestHome Finance Tracker v2.6.6
+# InvestHome Finance Tracker v2.6.9
 
 > **AI SLOP WARNING**  
 > Built by a Network Engineer who has no business pretending to be a full-stack developer.
@@ -23,7 +23,7 @@ InvestHome is a self-hosted personal finance dashboard built with **Python**, **
 ## Current version
 
 ```text
-v2.6.6
+v2.6.9
 ```
 
 Highlights in this version:

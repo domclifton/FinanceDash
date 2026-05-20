@@ -73,7 +73,13 @@
 </script>
 </head>
 <body>
-    <aside class="sidebar">
+    <div class="mobile-shell-bar" role="banner">
+        <a class="mobile-brand" href="{{ url_for('dashboard') }}" aria-label="Go to dashboard"><span class="brand-icon">⌂</span><span>Invest<span>Home</span></span></a>
+        <button class="mobile-menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-sidebar">☰</button>
+    </div>
+    <div class="mobile-nav-backdrop" data-mobile-nav-close></div>
+
+    <aside class="sidebar" id="site-sidebar">
         <div class="brand"><span class="brand-icon">⌂</span>Invest<span>Home</span></div>
         <nav class="nav-list">
             <a class="{{ 'active' if request.endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}"><span>⌂</span>Dashboard</a>
@@ -155,6 +161,35 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        const mobileToggle = document.querySelector(".mobile-menu-toggle");
+        const mobileCloseTargets = document.querySelectorAll("[data-mobile-nav-close], .sidebar .nav-list a");
+
+        function setMobileNav(open) {
+            document.body.classList.toggle("mobile-nav-open", open);
+            if (mobileToggle) {
+                mobileToggle.setAttribute("aria-expanded", open ? "true" : "false");
+                mobileToggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+            }
+        }
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener("click", function () {
+                setMobileNav(!document.body.classList.contains("mobile-nav-open"));
+            });
+        }
+
+        mobileCloseTargets.forEach(function (target) {
+            target.addEventListener("click", function () {
+                setMobileNav(false);
+            });
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                setMobileNav(false);
+            }
+        });
+
         document.querySelectorAll("a[href]").forEach(function (anchor) {
             anchor.addEventListener("mouseenter", function () {
                 prefetchPage(anchor.href);

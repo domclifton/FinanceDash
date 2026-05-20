@@ -7,9 +7,9 @@
     </div>
 </div>
 
-<div class="modern-kpi-grid">
+<div class="modern-kpi-grid dashboard-mobile-grid">
     {% if total_all_assets > 0 %}
-    <section class="kpi-card kpi-large">
+    <section class="kpi-card kpi-large dashboard-net-worth-card">
         <div class="kpi-icon blue">↗</div>
         <div><span>Total Net Worth</span><strong>{{ total_all_assets|money }}</strong><em>Includes investments, pension, property equity and cash</em></div>
     </section>
@@ -17,10 +17,10 @@
     {% if liquid > 0 %}<section class="kpi-card"><div class="kpi-icon blue">◌</div><div><span>Liquid</span><strong>{{ liquid|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
     {% if emergency > 0 %}<section class="kpi-card"><div class="kpi-icon red">◇</div><div><span>Emergency</span><strong>{{ emergency|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
     {% if short_term > 0 %}<section class="kpi-card"><div class="kpi-icon amber">□</div><div><span>Short Term</span><strong>{{ short_term|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
-    {% if mid_term > 0 %}<section class="kpi-card"><div class="kpi-icon green">◔</div><div><span>Mid Term</span><strong>{{ mid_term|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
-    {% if long_term > 0 %}<section class="kpi-card"><div class="kpi-icon purple">⌛</div><div><span>Long Term</span><strong>{{ long_term|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
-    {% if pension > 0 %}<section class="kpi-card"><div class="kpi-icon violet">♙</div><div><span>Pension</span><strong>{{ pension|money }}</strong><small>Retirement dashboard</small></div></section>{% endif %}
-    {% if property_equity > 0 %}<section class="kpi-card"><div class="kpi-icon teal">⌂</div><div><span>Property Equity</span><strong>{{ property_equity|money }}</strong><small>{{ '%.1f'|format(mortgage_ltv) }}% mortgage LTV</small></div></section>{% endif %}
+    {% if mid_term > 0 %}<section class="kpi-card dashboard-secondary-kpi"><div class="kpi-icon green">◔</div><div><span>Mid Term</span><strong>{{ mid_term|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
+    {% if long_term > 0 %}<section class="kpi-card dashboard-secondary-kpi"><div class="kpi-icon purple">⌛</div><div><span>Long Term</span><strong>{{ long_term|money }}</strong><small>▲ vs last 7 days</small></div></section>{% endif %}
+    {% if pension > 0 %}<section class="kpi-card dashboard-secondary-kpi"><div class="kpi-icon violet">♙</div><div><span>Pension</span><strong>{{ pension|money }}</strong><small>Retirement dashboard</small></div></section>{% endif %}
+    {% if property_equity > 0 %}<section class="kpi-card dashboard-secondary-kpi"><div class="kpi-icon teal">⌂</div><div><span>Property Equity</span><strong>{{ property_equity|money }}</strong><small>{{ '%.1f'|format(mortgage_ltv) }}% mortgage LTV</small></div></section>{% endif %}
 </div>
 
 <div class="dashboard-grid mt-4">
@@ -37,7 +37,7 @@
         <div class="panel-title"><h3>Investment Growth</h3><a href="{{ url_for('performance') }}">View</a></div>
         <div class="two-stat">
             <div><span>Contributions</span><strong>{{ total_contributions|money }}</strong></div>
-            <div><span>Growth</span><strong class="positive">{{ total_growth|money }}</strong></div>
+            <div><span>Growth</span><strong class="{{ 'positive' if total_growth >= 0 else 'negative' if total_growth < 0 else '' }}">{{ total_growth|money }}</strong></div>
         </div>
         <div class="mini-line"><span></span></div>
     </section>
