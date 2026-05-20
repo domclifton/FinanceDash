@@ -78,17 +78,20 @@ const pensionData = {{ pension_data | safe }};
 const monthlyLabels = {{ monthly_labels | safe }};
 const monthlyContributions = {{ monthly_contributions | safe }};
 const monthlyValueChanges = {{ monthly_value_changes | safe }};
+const themeColors = window.InvestHomeTheme ? window.InvestHomeTheme.colors() : { muted: '#667085', line: '#eef2f7' };
+Chart.defaults.font.family = 'Helvetica, Arial, sans-serif';
+Chart.defaults.color = themeColors.muted;
 
 new Chart(document.getElementById('pensionChart'), {
     type: 'line',
     data: { labels, datasets: [{ label: 'Pension Value', data: pensionData, tension: 0.35, fill: true }] },
-    options: { plugins: { legend: { labels: { color: '#475467' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { ticks: { color: '#667085' } }, y: { ticks: { color: '#667085', callback: value => '£' + Number(value).toLocaleString() } } } }
+    options: { plugins: { legend: { labels: { color: themeColors.muted } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { grid: { color: themeColors.line }, ticks: { color: themeColors.muted } }, y: { grid: { color: themeColors.line }, ticks: { color: themeColors.muted, callback: value => '£' + Number(value).toLocaleString() } } } }
 });
 
 new Chart(document.getElementById('monthlyChart'), {
     type: 'bar',
     data: { labels: monthlyLabels, datasets: [{ label: 'Contributions', data: monthlyContributions }, { label: 'Value Updates', data: monthlyValueChanges }] },
-    options: { plugins: { legend: { labels: { color: '#475467' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { ticks: { color: '#667085' } }, y: { ticks: { color: '#667085', callback: value => '£' + Number(value).toLocaleString() } } } }
+    options: { plugins: { legend: { labels: { color: themeColors.muted } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } } }, scales: { x: { grid: { color: themeColors.line }, ticks: { color: themeColors.muted } }, y: { grid: { color: themeColors.line }, ticks: { color: themeColors.muted, callback: value => '£' + Number(value).toLocaleString() } } } }
 });
 </script>
 {% endblock %}

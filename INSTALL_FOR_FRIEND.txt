@@ -1,4 +1,4 @@
-INVESTHOME FINANCE TRACKER v2.6.1 - EASY INSTALL
+INVESTHOME FINANCE TRACKER v2.6.3 - EASY INSTALL
 =================================================
 
 GitHub install:

@@ -16,7 +16,7 @@ DB_NAME = os.path.join(APP_DIR, "finance.db")
 GOLDAPI_KEY = os.getenv("GOLDAPI_KEY", "").strip()
 TRADING212_API_KEY = os.getenv("TRADING212_API_KEY", "").strip()
 TRADING212_API_SECRET = os.getenv("TRADING212_API_SECRET", "").strip()
-APP_VERSION = "2.6.1"
+APP_VERSION = "2.6.3"
 
 app = Flask(__name__)
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400

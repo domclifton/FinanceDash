@@ -56,10 +56,11 @@
 const holdingLabels = [{% for h in holdings %}'{{ h.ticker or "Unknown" }}',{% endfor %}];
 const holdingValues = [{% for h in holdings %}{{ h.current_value or 0 }},{% endfor %}];
 Chart.defaults.font.family = 'Helvetica, Arial, sans-serif';
-Chart.defaults.color = '#667085';
-new Chart(document.getElementById('holdingsAllocation'), { type: 'doughnut', data: { labels: holdingLabels, datasets: [{ data: holdingValues, borderWidth: 3, backgroundColor: ['#2563eb','#14b8a6','#f59e0b','#ef4444','#8b5cf6','#22c55e','#06b6d4','#f97316','#64748b','#a855f7'] }] }, options: { cutout: '62%', plugins: { legend: { position: 'right' } } } });
+const themeColors = window.InvestHomeTheme ? window.InvestHomeTheme.colors() : { muted: '#667085', line: '#eef2f7', surface: '#ffffff' };
+Chart.defaults.color = themeColors.muted;
+new Chart(document.getElementById('holdingsAllocation'), { type: 'doughnut', data: { labels: holdingLabels, datasets: [{ data: holdingValues, borderWidth: 3, borderColor: themeColors.surface, backgroundColor: ['#2563eb','#14b8a6','#f59e0b','#ef4444','#8b5cf6','#22c55e','#06b6d4','#f97316','#64748b','#a855f7'] }] }, options: { cutout: '62%', plugins: { legend: { position: 'right' } } } });
 const trendLabels = ['Sync', 'Current'];
 const trendData = [Math.max({{ portfolio_total }} * 0.96, 0), {{ portfolio_total }}];
-new Chart(document.getElementById('portfolioTrend'), { type: 'line', data: { labels: trendLabels, datasets: [{ label: 'Portfolio Value', data: trendData, tension: .35, fill: true, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', borderWidth: 3 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: value => '£' + Number(value).toLocaleString() } } } } });
+new Chart(document.getElementById('portfolioTrend'), { type: 'line', data: { labels: trendLabels, datasets: [{ label: 'Portfolio Value', data: trendData, tension: .35, fill: true, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', borderWidth: 3 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: themeColors.line }, ticks: { callback: value => '£' + Number(value).toLocaleString() } } } } });
 </script>
 {% endblock %}

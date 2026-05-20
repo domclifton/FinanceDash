@@ -1,3 +1,18 @@
+## v2.6.3 - Dropdown visual fix
+- Fixed repeated V-shaped chevron artefacts appearing inside dropdown/select fields in dark mode.
+- Removed Bootstrap/custom select SVG background images from dropdown controls.
+- Added stronger light and dark select styling to keep form controls visually consistent.
+- Bumped static asset versioning so browsers reload the updated CSS.
+
+## v2.6.2 - Dark mode
+- Added dark mode support across the InvestHome UI.
+- Added the light/dark theme control to Settings > Appearance so it is no longer shown in the sidebar.
+- Matched the theme control styling to the existing rounded InvestHome settings controls.
+- Persisted the selected theme in localStorage and defaulted to the user's system theme when no preference exists.
+- Added dark theme CSS variables and component overrides for sidebar, panels, cards, tables, forms, alerts, budget widgets, Trading 212 widgets, and charts.
+- Added a static stylesheet cache-buster using the app version so theme CSS updates load after upgrading.
+- Updated APP_VERSION, VERSION.txt, CHANGELOG.txt, README, and install instructions.
+
 
 ## v2.6.1 - Bug fixes
 - Fixed couple budget add/edit stream selectors so saved person names are displayed instead of generic Person 1 / Person 2 labels.

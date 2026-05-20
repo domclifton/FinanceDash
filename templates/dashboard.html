@@ -85,15 +85,16 @@ const categoryLabels = {{ category_labels | safe }};
 const categoryData = {{ category_data | safe }};
 const pounds = value => '£' + Number(value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 Chart.defaults.font.family = 'Helvetica, Arial, sans-serif';
-Chart.defaults.color = '#667085';
+const themeColors = window.InvestHomeTheme ? window.InvestHomeTheme.colors() : { muted: '#667085', line: '#eef2f7', surface: '#ffffff' };
+Chart.defaults.color = themeColors.muted;
 new Chart(document.getElementById('netWorthChart'), {
     type: 'line',
     data: { labels, datasets: [{ label: 'Net Worth', data: netWorthData, tension: 0.38, borderWidth: 3, pointRadius: 4, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', fill: true }] },
-    options: { responsive: true, plugins: { legend: { display: true }, tooltip: { callbacks: { label: ctx => 'Net Worth: ' + pounds(ctx.parsed.y) } } }, scales: { x: { grid: { color: '#eef2f7' } }, y: { grid: { color: '#eef2f7' }, ticks: { callback: value => '£' + Number(value).toLocaleString() } } } }
+    options: { responsive: true, plugins: { legend: { display: true }, tooltip: { callbacks: { label: ctx => 'Net Worth: ' + pounds(ctx.parsed.y) } } }, scales: { x: { grid: { color: themeColors.line } }, y: { grid: { color: themeColors.line }, ticks: { callback: value => '£' + Number(value).toLocaleString() } } } }
 });
 new Chart(document.getElementById('categoryChart'), {
     type: 'doughnut',
-    data: { labels: categoryLabels, datasets: [{ data: categoryData, borderWidth: 3, backgroundColor: ['#2563eb','#14b8a6','#f59e0b','#f97316','#8b5cf6','#a855f7','#22c55e','#f43f5e'] }] },
+    data: { labels: categoryLabels, datasets: [{ data: categoryData, borderWidth: 3, borderColor: themeColors.surface, backgroundColor: ['#2563eb','#14b8a6','#f59e0b','#f97316','#8b5cf6','#a855f7','#22c55e','#f43f5e'] }] },
     options: { cutout: '62%', plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + pounds(ctx.parsed) } } } }
 });
 </script>

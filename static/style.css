@@ -108,3 +108,134 @@ body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:400;}
 .chart-profit-fill{fill:rgba(16,185,129,.08);stroke:none;}
 .performance-panel{overflow:visible;}
 @media(max-width:900px){.svg-chart-wrap svg.performance-svg{min-width:720px}.chart-label{font-size:11px}}
+
+/* v2.6.2 dark mode */
+html[data-theme="dark"]{
+    --bg:#0b1220;
+    --surface:#111827;
+    --surface-soft:#162033;
+    --text:#e5e7eb;
+    --muted:#9ca3af;
+    --line:#263244;
+    --blue:#60a5fa;
+    --blue-soft:#152642;
+    --green:#34d399;
+    --red:#fb7185;
+    --amber:#fbbf24;
+    --purple:#a78bfa;
+    --teal:#2dd4bf;
+    --shadow:0 18px 45px rgba(0,0,0,.28);
+    --shadow-soft:0 8px 24px rgba(0,0,0,.22);
+    color-scheme:dark;
+}
+html[data-theme="dark"] body{background:radial-gradient(circle at top left,#182235 0,#101827 38%,#070b12 100%);color:var(--text)}
+html[data-theme="dark"] .sidebar{background:rgba(17,24,39,.88);border-right-color:var(--line)}
+html[data-theme="dark"] .nav-list a{color:#cbd5e1}
+html[data-theme="dark"] .nav-list a span:first-child{color:#94a3b8}
+html[data-theme="dark"] .nav-list a:hover,html[data-theme="dark"] .nav-list a.active{background:#172a46;color:var(--blue);box-shadow:inset 3px 0 0 var(--blue)}
+html[data-theme="dark"] .sidebar-sync-card,html[data-theme="dark"] .search-box,html[data-theme="dark"] .glass-card,html[data-theme="dark"] .panel,html[data-theme="dark"] .card,html[data-theme="dark"] .metric-card{background:rgba(17,24,39,.92)!important;border-color:var(--line)!important;color:var(--text)!important}
+html[data-theme="dark"] .btn-snapshot,html[data-theme="dark"] .pill,html[data-theme="dark"] .badge-soft,html[data-theme="dark"] .quick-actions a{background:#111827;border-color:var(--line);color:var(--blue)}
+html[data-theme="dark"] .version-text,html[data-theme="dark"] .snapshot-status,html[data-theme="dark"] .top-actions,html[data-theme="dark"] .bell,html[data-theme="dark"] .kpi-card span,html[data-theme="dark"] .connection-form label,html[data-theme="dark"] .performance-legend,html[data-theme="dark"] .quick-actions span{color:#cbd5e1}
+html[data-theme="dark"] .kpi-card,html[data-theme="dark"] .metric-card{background:rgba(17,24,39,.9);border-color:var(--line)}
+html[data-theme="dark"] .metric-card.accent,html[data-theme="dark"] .isa-feed-card{background:linear-gradient(135deg,#111827,#172033)!important}
+html[data-theme="dark"] .mini-metrics div,html[data-theme="dark"] .budget-chip,html[data-theme="dark"] .budget-chip.purple,html[data-theme="dark"] .read-only-note{background:#162033;border-color:var(--line);color:var(--text)}
+html[data-theme="dark"] .soft-warning{background:#2b1f12;border-color:#7c4a13;color:#fbbf24}
+html[data-theme="dark"] .table{--bs-table-bg:transparent;--bs-table-color:var(--text);--bs-table-border-color:var(--line);color:var(--text)}
+html[data-theme="dark"] .table th{color:#cbd5e1}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea,html[data-theme="dark"] .form-control,html[data-theme="dark"] .form-select{background:#0f172a!important;border-color:#334155!important;color:var(--text)!important}
+html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#94a3b8!important}
+html[data-theme="dark"] .alert-info{background:#13233b;border-color:#244468;color:#bfdbfe}
+html[data-theme="dark"] .progress-line{background:#1f2937}
+html[data-theme="dark"] .mode-switch{background:#0f172a;border-color:var(--line)}
+html[data-theme="dark"] .mode-switch a{color:#cbd5e1}
+html[data-theme="dark"] .mode-switch a.active{background:#172a46;color:var(--blue)}
+html[data-theme="dark"] .chart-grid,html[data-theme="dark"] .chart-grid-vertical{stroke:#263244}
+html[data-theme="dark"] .chart-axis{stroke:#475569}
+html[data-theme="dark"] .chart-label{fill:#cbd5e1}
+html[data-theme="dark"] .chart-dot-blue,html[data-theme="dark"] .chart-dot-green{fill:#111827}
+html[data-theme="dark"] .ticker-badge,html[data-theme="dark"] .kpi-icon.blue{background:#172a46;color:var(--blue)}
+html[data-theme="dark"] .kpi-icon.green{background:#123527;color:var(--green)}
+html[data-theme="dark"] .kpi-icon.red{background:#3a1420;color:var(--red)}
+html[data-theme="dark"] .kpi-icon.amber{background:#33260d;color:var(--amber)}
+html[data-theme="dark"] .kpi-icon.purple,html[data-theme="dark"] .kpi-icon.violet{background:#261c40;color:var(--purple)}
+html[data-theme="dark"] .kpi-icon.teal{background:#113235;color:var(--teal)}
+.appearance-panel .panel-title{margin-bottom:8px}.theme-mode-switch{display:inline-flex;gap:8px;background:#eef2f7;border:1px solid var(--line);padding:6px;border-radius:16px;box-shadow:var(--shadow-soft)}.theme-choice{appearance:none;border:0;background:transparent;color:#475467;padding:10px 16px;border-radius:12px;font-weight:700;display:flex;align-items:center;gap:8px;line-height:1;transition:.15s}.theme-choice:hover{color:var(--blue)}.theme-choice.active{background:#fff;color:var(--blue);box-shadow:0 5px 16px rgba(15,23,42,.08)}.theme-choice-icon{font-size:15px;line-height:1}html[data-theme="dark"] .theme-mode-switch{background:#0f172a;border-color:var(--line)}html[data-theme="dark"] .theme-choice{color:#cbd5e1}html[data-theme="dark"] .theme-choice:hover{color:var(--blue)}html[data-theme="dark"] .theme-choice.active{background:#172a46;color:var(--blue);box-shadow:0 5px 16px rgba(0,0,0,.2)}
+
+/* Fix repeated chevron artefacts on select dropdowns in dark mode.
+   Bootstrap's custom select SVG can tile in some browsers when combined with
+   the dark theme overrides, producing repeated V-shaped marks. Use the native
+   platform select arrow instead and explicitly remove all custom backgrounds. */
+select.form-select,
+select.form-select-sm,
+select.form-control,
+.form-select,
+.form-select-sm{
+    -webkit-appearance:auto!important;
+    -moz-appearance:auto!important;
+    appearance:auto!important;
+    background-image:none!important;
+    background-repeat:no-repeat!important;
+    background-position:initial!important;
+    background-size:auto!important;
+    padding-right:.75rem!important;
+    color-scheme:light;
+}
+select.form-select::-ms-expand,
+select.form-control::-ms-expand{display:block!important}
+html[data-theme="dark"] select.form-select,
+html[data-theme="dark"] select.form-select-sm,
+html[data-theme="dark"] select.form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .form-select-sm{
+    background-color:#0f172a!important;
+    background-image:none!important;
+    background-repeat:no-repeat!important;
+    border-color:#334155!important;
+    color:var(--text)!important;
+    color-scheme:dark;
+}
+
+
+/* v2.6.3 select chevron artefact fix
+   Fully opt dropdowns out of Bootstrap/custom SVG backgrounds. The previous
+   dark-mode styles could leave Bootstrap's select image variable active in
+   cached styles, causing repeated V-shaped chevrons inside select boxes. */
+html select,
+html .form-select,
+html .form-select-sm,
+html .form-control:is(select){
+    --bs-form-select-bg-img:none!important;
+    --bs-form-select-bg:none!important;
+    -webkit-appearance:none!important;
+    -moz-appearance:none!important;
+    appearance:none!important;
+    background-image:none!important;
+    background-repeat:no-repeat!important;
+    background-position:right .75rem center!important;
+    background-size:0 0!important;
+    padding-right:.75rem!important;
+}
+html[data-theme="light"] select,
+html[data-theme="light"] .form-select,
+html[data-theme="light"] .form-select-sm,
+html[data-theme="light"] .form-control:is(select){
+    background:#ffffff!important;
+    background-image:none!important;
+    color:#0f172a!important;
+}
+html[data-theme="dark"] select,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .form-select-sm,
+html[data-theme="dark"] .form-control:is(select){
+    background:#0f172a!important;
+    background-image:none!important;
+    border-color:#334155!important;
+    color:#e5e7eb!important;
+    color-scheme:dark;
+}
+html[data-theme="dark"] select option,
+html[data-theme="dark"] .form-select option,
+html[data-theme="dark"] .form-select-sm option{
+    background:#0f172a;
+    color:#e5e7eb;
+}

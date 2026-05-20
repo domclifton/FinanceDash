@@ -2,6 +2,25 @@
 {% block content %}
 <div class="page-header"><div><p class="eyebrow">Configuration</p><h1>Settings</h1><p class="subtle mb-0">App-wide settings, integrations, and sync logs.</p></div></div>
 
+
+<section class="panel mb-4 appearance-panel">
+    <div class="panel-title">
+        <h3>Appearance</h3>
+        <span class="pill">Theme: <span data-theme-current>Light</span></span>
+    </div>
+    <p class="muted">Choose the colour theme for this browser. Your preference is saved locally and applies across the app.</p>
+    <div class="theme-mode-switch" role="group" aria-label="Theme selection">
+        <button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="true">
+            <span class="theme-choice-icon">☀</span>
+            <span>Light</span>
+        </button>
+        <button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false">
+            <span class="theme-choice-icon">☾</span>
+            <span>Dark</span>
+        </button>
+    </div>
+</section>
+
 <section class="panel mb-4">
     <h5>Metal Pricing</h5>
     <p class="muted">Live prices use GoldAPI when GOLDAPI_KEY is set. Manual prices are used as fallback.</p>

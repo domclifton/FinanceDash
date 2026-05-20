@@ -129,6 +129,9 @@
 <script>
 const labels = {{ chart_labels | safe }};
 const rawDatasets = {{ chart_datasets | safe }};
+const themeColors = window.InvestHomeTheme ? window.InvestHomeTheme.colors() : { muted: '#667085', line: '#eef2f7' };
+Chart.defaults.font.family = 'Helvetica, Arial, sans-serif';
+Chart.defaults.color = themeColors.muted;
 
 new Chart(document.getElementById('compoundChart'), {
     type: 'line',
@@ -144,12 +147,14 @@ new Chart(document.getElementById('compoundChart'), {
     options: {
         responsive: true,
         plugins: {
-            legend: { position: 'bottom' },
+            legend: { position: 'bottom', labels: { color: themeColors.muted } },
             tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': £' + Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) } }
         },
         scales: {
+            x: { grid: { color: themeColors.line }, ticks: { color: themeColors.muted } },
             y: {
-                ticks: {
+                grid: { color: themeColors.line },
+                ticks: { color: themeColors.muted,
                     callback: value => '£' + Number(value).toLocaleString()
                 }
             }
