@@ -239,3 +239,6 @@ html[data-theme="dark"] .form-select-sm option{
     background:#0f172a;
     color:#e5e7eb;
 }
+
+/* Trading 212 credentials settings */
+.form-hint{font-size:12px;color:var(--muted);margin-top:4px}.connection-form .form-check-label{font-weight:600;color:var(--muted);font-size:13px}html[data-theme="dark"] .form-hint,html[data-theme="dark"] .connection-form .form-check-label{color:#94a3b8}

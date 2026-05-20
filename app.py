@@ -14,9 +14,7 @@ load_dotenv()
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(APP_DIR, "finance.db")
 GOLDAPI_KEY = os.getenv("GOLDAPI_KEY", "").strip()
-TRADING212_API_KEY = os.getenv("TRADING212_API_KEY", "").strip()
-TRADING212_API_SECRET = os.getenv("TRADING212_API_SECRET", "").strip()
-APP_VERSION = "2.6.3"
+APP_VERSION = "2.6.6"
 
 app = Flask(__name__)
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400
@@ -281,7 +279,10 @@ def init_db():
             cash_value REAL NOT NULL DEFAULT 0,
             holdings_value REAL NOT NULL DEFAULT 0,
             portfolio_total REAL NOT NULL DEFAULT 0,
-            rate_limit_reset_at TEXT
+            rate_limit_reset_at TEXT,
+            api_key TEXT,
+            api_secret TEXT,
+            credentials_updated_at TIMESTAMP
         )
     """)
 
@@ -291,6 +292,9 @@ def init_db():
         "holdings_value": "REAL NOT NULL DEFAULT 0",
         "portfolio_total": "REAL NOT NULL DEFAULT 0",
         "rate_limit_reset_at": "TEXT",
+        "api_key": "TEXT",
+        "api_secret": "TEXT",
+        "credentials_updated_at": "TIMESTAMP",
     }.items():
         if column_name not in trading212_columns:
             cur.execute(f"ALTER TABLE trading212_settings ADD COLUMN {column_name} {column_def}")
@@ -986,13 +990,41 @@ class Trading212RateLimitError(RuntimeError):
         super().__init__(message)
 
 
+def trading212_get_credentials(conn=None):
+    """Return Trading 212 credentials saved in the app settings database."""
+    api_key = ""
+    api_secret = ""
+    close_conn = False
+
+    try:
+        if conn is None:
+            conn = get_db()
+            close_conn = True
+        row = trading212_get_settings(conn)
+        if row and "api_key" in row.keys():
+            api_key = str(row["api_key"] or "").strip()
+        if row and "api_secret" in row.keys():
+            api_secret = str(row["api_secret"] or "").strip()
+    finally:
+        if close_conn and conn:
+            conn.close()
+
+    return api_key, api_secret
+
+
+def trading212_credentials_present(conn=None):
+    api_key, api_secret = trading212_get_credentials(conn)
+    return bool(api_key and api_secret)
+
+
 def trading212_api_get(environment, path):
-    """Call Trading 212 read-only endpoint using Basic Auth from .env."""
-    if not TRADING212_API_KEY or not TRADING212_API_SECRET:
-        raise RuntimeError("Trading 212 API credentials are missing. Add TRADING212_API_KEY and TRADING212_API_SECRET to .env")
+    """Call Trading 212 read-only endpoint using credentials saved in Settings."""
+    api_key, api_secret = trading212_get_credentials()
+    if not api_key or not api_secret:
+        raise RuntimeError("Trading 212 API credentials are missing. Add them in Settings → Trading 212 Connection.")
 
     url = trading212_base_url(environment) + path
-    response = requests.get(url, auth=(TRADING212_API_KEY, TRADING212_API_SECRET), timeout=15)
+    response = requests.get(url, auth=(api_key, api_secret), timeout=15)
 
     if response.status_code == 429:
         raise Trading212RateLimitError(response.headers.get("x-ratelimit-reset"))
@@ -2061,8 +2093,8 @@ def trading212_page():
     total_holdings = float(settings["holdings_value"] or 0) if "holdings_value" in settings.keys() else sum(float(row["current_value"] or 0) for row in holdings)
     total_cash = float(settings["cash_value"] or 0) if "cash_value" in settings.keys() else 0
     portfolio_total = float(settings["portfolio_total"] or 0) if "portfolio_total" in settings.keys() else round(total_holdings + total_cash, 2)
+    credentials_present = trading212_credentials_present(conn)
     conn.close()
-    credentials_present = bool(TRADING212_API_KEY and TRADING212_API_SECRET)
     return render_template(
         "trading212.html",
         settings=settings,
@@ -2083,7 +2115,8 @@ def trading212_update_settings():
         environment = "demo"
     target_account_name = request.form.get("target_account_name", "Stocks and Shares ISA").strip() or "Stocks and Shares ISA"
     auto_update_account = 1 if request.form.get("auto_update_account") == "1" else 0
-
+    api_key = request.form.get("api_key", "").strip()
+    api_secret = request.form.get("api_secret", "").strip()
     conn = get_db()
     conn.execute(
         """
@@ -2093,6 +2126,21 @@ def trading212_update_settings():
         """,
         (environment, target_account_name, auto_update_account),
     )
+
+    if api_key or api_secret:
+        existing = trading212_get_settings(conn)
+        saved_api_key = api_key or (existing["api_key"] if "api_key" in existing.keys() else None)
+        saved_api_secret = api_secret or (existing["api_secret"] if "api_secret" in existing.keys() else None)
+        conn.execute(
+            """
+            UPDATE trading212_settings
+            SET api_key = ?, api_secret = ?, credentials_updated_at = CURRENT_TIMESTAMP
+            WHERE id = 1
+            """,
+            (saved_api_key, saved_api_secret),
+        )
+        flash("Trading 212 credentials saved. Existing saved credentials were overwritten.")
+
     conn.commit()
     conn.close()
     flash("Trading 212 settings updated.")
@@ -2163,7 +2211,8 @@ def settings():
         "t212_settings": t212_settings,
         "t212_logs": t212_logs,
         "t212_accounts": t212_accounts,
-        "t212_credentials_present": bool(TRADING212_API_KEY and TRADING212_API_SECRET),
+        "t212_credentials_present": trading212_credentials_present(conn),
+        "t212_saved_credentials_present": bool(("api_key" in t212_settings.keys() and t212_settings["api_key"]) and ("api_secret" in t212_settings.keys() and t212_settings["api_secret"])),
     }
     conn.close()
     return render_template("settings.html", **values)

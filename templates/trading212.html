@@ -11,7 +11,7 @@
     <section class="kpi-card"><div class="kpi-icon purple">◔</div><div><span>Holdings Value</span><strong>{{ total_holdings|money }}</strong><small>Synced cached value</small></div></section>
     <section class="kpi-card"><div class="kpi-icon blue">▣</div><div><span>Cash Balance</span><strong>{{ total_cash|money }}</strong><small>Free cash</small></div></section>
     <section class="kpi-card"><div class="kpi-icon green">↻</div><div><span>Synced Total</span><strong>{{ portfolio_total|money }}</strong><small>Holdings + cash</small></div></section>
-    <section class="kpi-card"><div class="kpi-icon blue">↗</div><div><span>Credentials</span><strong class="{{ 'positive' if credentials_present else 'negative' }}">{{ 'Ready' if credentials_present else 'Missing' }}</strong><small>.env based credentials</small></div></section>
+    <section class="kpi-card"><div class="kpi-icon blue">↗</div><div><span>Credentials</span><strong class="{{ 'positive' if credentials_present else 'negative' }}">{{ 'Ready' if credentials_present else 'Missing' }}</strong><small>Settings credentials</small></div></section>
     <section class="kpi-card"><div class="kpi-icon teal">✓</div><div><span>Last Sync</span><strong class="small-value">{{ settings.last_sync_at or 'Never' }}</strong><small>{{ settings.environment|capitalize }} environment</small></div></section>
 </div>
 
@@ -44,7 +44,7 @@
                         <td class="text-end {{ 'positive' if h.pnl >= 0 else 'negative' }}">{{ h.pnl|money }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="8" class="muted">No holdings synced yet. Add credentials to .env, then use Settings → Trading 212 → Sync Now.</td></tr>
+                    <tr><td colspan="8" class="muted">No holdings synced yet. Add credentials in Settings → Trading 212 Connection, then use Sync Now.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -61,13 +61,23 @@
             <select class="form-select" name="target_account_name">{% for account in t212_accounts %}<option value="{{ account.name }}" {% if account.name == t212_settings.target_account_name %}selected{% endif %}>{{ account.name }}</option>{% endfor %}</select>
             <label>Auto-update account value</label>
             <select class="form-select" name="auto_update_account"><option value="1" {% if t212_settings.auto_update_account %}selected{% endif %}>Yes</option><option value="0" {% if not t212_settings.auto_update_account %}selected{% endif %}>No</option></select>
+            <label>API key</label>
+            <div>
+                <input class="form-control" name="api_key" type="password" autocomplete="off" placeholder="{% if t212_saved_credentials_present %}Saved — leave blank to keep current key{% else %}Paste Trading 212 API key{% endif %}">
+                <div class="form-hint">Enter a new key to overwrite the saved key. Leave blank to keep the current saved key.</div>
+            </div>
+            <label>API secret</label>
+            <div>
+                <input class="form-control" name="api_secret" type="password" autocomplete="off" placeholder="{% if t212_saved_credentials_present %}Saved — leave blank to keep current secret{% else %}Paste Trading 212 API secret{% endif %}">
+                <div class="form-hint">Enter a new secret to overwrite the saved secret. Secrets are hidden after saving and are never displayed back in the UI.</div>
+            </div>
             <button class="btn btn-primary">Save Trading 212 Settings</button>
         </form>
-        <div class="read-only-note">ⓘ This integration is read-only. It pulls cached data from Trading 212 and can feed your Stocks & Shares ISA value. Credentials are read from <code>.env</code>.</div>
+        <div class="read-only-note">ⓘ This integration is read-only. Saved credentials are stored within the application settings.</div>
         <div class="three-stat mt-3">
             <div><span>Credentials</span><strong class="{{ 'positive' if t212_credentials_present else 'negative' }}">{{ 'Ready' if t212_credentials_present else 'Missing' }}</strong></div>
-            <div><span>Environment</span><strong>{{ t212_settings.environment|capitalize }}</strong></div>
             <div><span>Last Sync</span><strong class="small-value">{{ t212_settings.last_sync_at or 'Never' }}</strong></div>
+            <div><span>Mode</span><strong>{{ t212_settings.environment|capitalize }}</strong></div>
         </div>
         <div class="d-flex gap-2 mt-3">
             <form method="post" action="{{ url_for('trading212_test_connection') }}"><button class="btn btn-outline-primary">Test Connection</button></form>

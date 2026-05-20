@@ -1,4 +1,4 @@
-INVESTHOME FINANCE TRACKER v2.6.3 - EASY INSTALL
+INVESTHOME FINANCE TRACKER v2.6.6 - EASY INSTALL
 =================================================
 
 GitHub install:
@@ -24,12 +24,8 @@ Open it in a browser:
 TRADING 212 OPTIONAL SETUP
 ==========================
 
-Edit .env and add your Trading 212 credentials:
-
-   TRADING212_API_KEY=your_api_key_here
-   TRADING212_API_SECRET=your_api_secret_here
-
-Restart the app after changing .env.
+Optional: add Trading 212 credentials in Settings → Trading 212 Connection after first launch.
+Credentials are saved in the application settings and can be overwritten from the same page.
 
 UPDATING FROM AN OLDER VERSION
 ==============================

@@ -1,4 +1,4 @@
-# InvestHome Finance Tracker v2.6.3
+# InvestHome Finance Tracker v2.6.6
 
 > **AI SLOP WARNING**  
 > Built by a Network Engineer who has no business pretending to be a full-stack developer.
@@ -23,7 +23,7 @@ InvestHome is a self-hosted personal finance dashboard built with **Python**, **
 ## Current version
 
 ```text
-v2.6.3
+v2.6.6
 ```
 
 Highlights in this version:
@@ -78,11 +78,9 @@ Optional values:
 ```env
 GOLDAPI_KEY=
 FLASK_SECRET_KEY=change-me
-TRADING212_API_KEY=
-TRADING212_API_SECRET=
 ```
 
-Trading 212 credentials are only needed if you want the read-only Trading 212 sync section.
+Trading 212 credentials are only needed if you want the read-only Trading 212 sync section. Enter them in Settings → Trading 212 Connection after launching the app.
 
 ## Updating an existing install
 

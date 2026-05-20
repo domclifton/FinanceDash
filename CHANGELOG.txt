@@ -1,3 +1,22 @@
+## v2.6.6 - Trading 212 credentials UI cleanup
+- Removed .env fallback wording from the Trading 212 settings page.
+- Removed the Credential Source status from Settings.
+- Standardised Trading 212 API credentials on the app settings database.
+- Updated Trading 212 connection messaging to refer only to Settings credentials.
+- Updated APP_VERSION, VERSION.txt, README, install notes, and release notes.
+
+## v2.6.5 - Trading 212 settings UX refinement
+- Removed the confusing clear-saved-credentials checkbox from Settings → Trading 212 Connection.
+- Saving a new Trading 212 API key or secret now overwrites the previously saved app-database value.
+- Updated helper text to explain that blank fields keep the current saved credentials or .env fallback.
+
+## v2.6.4 - Trading 212 credentials settings
+- Added Trading 212 API key and API secret fields to Settings → Trading 212 Connection.
+- Saved Trading 212 credentials in the local app database so users no longer need to edit .env for this integration.
+- Kept existing .env credentials as a fallback for self-hosted deployments.
+- Added credential status/source display and a clear-saved-credentials option.
+- Kept Trading 212 API secrets hidden after save and out of sync logs.
+
 ## v2.6.3 - Dropdown visual fix
 - Fixed repeated V-shaped chevron artefacts appearing inside dropdown/select fields in dark mode.
 - Removed Bootstrap/custom select SVG background images from dropdown controls.
