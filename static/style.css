@@ -629,3 +629,39 @@ html[data-theme="dark"] .mobile-brand{color:var(--text)}
     }
 }
 
+
+/* v2.7.4 budget total readability
+   Makes the Budget page Total Assigned and Floating Left values stand out more on desktop and mobile. */
+.budget-total-card strong{
+    font-size:clamp(1.55rem, 2.4vw, 2.25rem)!important;
+    line-height:1.05!important;
+    letter-spacing:-.045em!important;
+}
+
+.budget-total-card span{
+    font-size:.82rem!important;
+    font-weight:800!important;
+    letter-spacing:.02em!important;
+}
+
+.budget-table-total{
+    font-size:clamp(1.1rem, 1.6vw, 1.45rem)!important;
+    font-weight:900!important;
+    letter-spacing:-.035em!important;
+    white-space:nowrap!important;
+}
+
+.budget-summary-row th{
+    padding-top:14px!important;
+    padding-bottom:14px!important;
+}
+
+@media(max-width:900px){
+    .budget-total-card strong{
+        font-size:clamp(1.45rem, 7vw, 2rem)!important;
+    }
+
+    .budget-table-total{
+        font-size:clamp(1.05rem, 5vw, 1.35rem)!important;
+    }
+}

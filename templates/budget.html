@@ -20,11 +20,11 @@
         <span>Income Avg</span>
         <strong>{{ solo_income|money }}</strong>
     </div>
-    <div class="metric-card">
+    <div class="metric-card budget-total-card">
         <span>Total Assigned</span>
         <strong>{{ solo_total_outgoings|money }}</strong>
     </div>
-    <div class="metric-card">
+    <div class="metric-card budget-total-card">
         <span>Floating Left</span>
         <strong class="{% if solo_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ solo_floating_left|money }}</strong>
     </div>
@@ -94,8 +94,8 @@
                 {% endfor %}
             </tbody>
             <tfoot>
-                <tr><th>Total Assigned</th><th>{{ solo_total_outgoings|money }}</th><th></th></tr>
-                <tr><th>Floating Left</th><th class="{% if solo_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ solo_floating_left|money }}</th><th></th></tr>
+                <tr class="budget-summary-row"><th>Total Assigned</th><th class="budget-table-total">{{ solo_total_outgoings|money }}</th><th></th></tr>
+                <tr class="budget-summary-row"><th>Floating Left</th><th class="budget-table-total {% if solo_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ solo_floating_left|money }}</th><th></th></tr>
             </tfoot>
         </table>
     </div>
@@ -105,7 +105,7 @@
     <div class="metric-card accent"><span>{{ couple_settings.person_one_name }} Income</span><strong>{{ person_one_income|money }}</strong></div>
     <div class="metric-card accent"><span>{{ couple_settings.person_two_name }} Income</span><strong>{{ person_two_income|money }}</strong></div>
     <div class="metric-card"><span>Combined Income</span><strong>{{ combined_income|money }}</strong></div>
-    <div class="metric-card"><span>Floating Left</span><strong class="{% if couple_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ couple_floating_left|money }}</strong></div>
+    <div class="metric-card budget-total-card"><span>Floating Left</span><strong class="{% if couple_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ couple_floating_left|money }}</strong></div>
 </div>
 
 <div class="row g-4 mb-4">
@@ -147,7 +147,7 @@
         <div class="metric-card"><span>Joint</span><strong>{{ stream_totals.get('Joint', 0)|money }}</strong></div>
         <div class="metric-card"><span>{{ couple_settings.person_one_name }}</span><strong>{{ stream_totals.get('Person 1', 0)|money }}</strong></div>
         <div class="metric-card"><span>{{ couple_settings.person_two_name }}</span><strong>{{ stream_totals.get('Person 2', 0)|money }}</strong></div>
-        <div class="metric-card"><span>Total Assigned</span><strong>{{ couple_total_outgoings|money }}</strong></div>
+        <div class="metric-card budget-total-card"><span>Total Assigned</span><strong>{{ couple_total_outgoings|money }}</strong></div>
     </div>
 </div>
 
@@ -180,8 +180,8 @@
                 {% endfor %}
             </tbody>
             <tfoot>
-                <tr><th colspan="2">Total Assigned</th><th>{{ couple_total_outgoings|money }}</th><th></th></tr>
-                <tr><th colspan="2">Floating Left</th><th class="{% if couple_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ couple_floating_left|money }}</th><th></th></tr>
+                <tr class="budget-summary-row"><th colspan="2">Total Assigned</th><th class="budget-table-total">{{ couple_total_outgoings|money }}</th><th></th></tr>
+                <tr class="budget-summary-row"><th colspan="2">Floating Left</th><th class="budget-table-total {% if couple_floating_left < 0 %}negative{% else %}positive{% endif %}">{{ couple_floating_left|money }}</th><th></th></tr>
             </tfoot>
         </table>
     </div>

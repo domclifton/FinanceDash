@@ -61,7 +61,6 @@
                         <input type="hidden" name="account_id" value="{{ account.id }}">
                         <select class="form-select form-select-sm" name="transaction_type"><option value="add">Add</option><option value="remove">Remove</option></select>
                         <input class="form-control form-control-sm" name="amount" type="number" step="0.01" placeholder="Amount" required>
-                        <input class="form-control form-control-sm" name="note" placeholder="Note">
                         <button class="btn btn-sm btn-success">Save</button>
                     </form>
                     {% else %}
@@ -73,7 +72,6 @@
                     <form method="post" action="{{ url_for('update_account_value') }}" class="d-flex gap-2">
                         <input type="hidden" name="account_id" value="{{ account.id }}">
                         <input class="form-control form-control-sm" name="new_value" type="number" step="0.01" placeholder="New total" required>
-                        <input class="form-control form-control-sm" name="note" placeholder="Reason e.g. market update">
                         <button class="btn btn-sm btn-primary">Update</button>
                     </form>
                     {% else %}

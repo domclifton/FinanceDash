@@ -14,7 +14,7 @@ load_dotenv()
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(APP_DIR, "finance.db")
 GOLDAPI_KEY = os.getenv("GOLDAPI_KEY", "").strip()
-APP_VERSION = "2.7.1"
+APP_VERSION = "2.7.5"
 
 app = Flask(__name__)
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400

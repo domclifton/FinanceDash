@@ -1,3 +1,23 @@
+v2.7.5 - Remove Broad CSS Auto-Scaling
+- Removed the broad v2.7.3 CSS auto-scaling block from static/style.css.
+- Kept the targeted v2.7.4 Budget page Total Assigned / Floating Left readability sizing.
+- Renamed the packaged release folder to investhome-v2.7.5.
+- Updated APP_VERSION, VERSION.txt, README, install notes, AI framework, changelog, and release notes.
+
+v2.7.4 - Clean Package and Budget Readability
+- Renamed the packaged release folder to investhome-v2.7.4.
+- Removed unnecessary release ZIP clutter: screenshots, __pycache__ artefacts, old release-note history, and GitHub housekeeping files not needed for a self-hosted install.
+- Added AI_PROJECT_FRAMEWORK.md so future AI imports have project continuity and clear single-user self-hosted boundaries.
+- Added `.env.example` because the install script and README expect it.
+- Increased Budget page Total Assigned and Floating Left value sizing for better readability.
+- Updated APP_VERSION, VERSION.txt, README, install notes, changelog, and release notes.
+
+v2.7.3 - Accounts UI and Box Text Scaling
+- Renamed the packaged release folder to investhome-v2.7.3.
+- Removed the Notes fields from Accounts page Add/Remove and Update Total Value forms.
+- Added CSS auto-scaling/wrapping rules for text inside dashboard cards, metric cards, budget chips, panels, and other boxes.
+- Updated APP_VERSION, VERSION.txt, README, install notes, changelog, and release notes.
+
 v2.7.2 - Version Display Fix
 - Fixed duplicate 'v' prefix in the displayed application version.
 - Standardised stored version values to remove the extra prefix.
