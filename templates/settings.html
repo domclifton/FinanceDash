@@ -21,6 +21,76 @@
     </div>
 </section>
 
+
+<section class="panel mb-4 database-panel">
+    <div class="panel-title">
+        <h3>Database</h3>
+        <span class="pill">{{ database_path }}</span>
+    </div>
+    <p class="muted">The live SQLite database is stored in <strong>{{ database_path }}</strong> so the main project folder stays clean. Use these tools before testing large imports or manual data changes.</p>
+
+    <div class="settings-grid compact-grid mb-3">
+        <div class="soft-card">
+            <h5>Undo Last User Action</h5>
+            <p class="muted small mb-2">Restores the automatic database undo point captured before the last form action.</p>
+            {% if database_undo.available %}
+                <p class="form-hint">Available: {{ database_undo.description or 'Last database action' }}</p>
+                <form method="post" action="{{ url_for('database_undo') }}" onsubmit="return confirm('Undo the last database action? A pre-undo backup will be created first.');">
+                    <button class="btn btn-warning">Undo Last Action</button>
+                </form>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>No Undo Point Yet</button>
+            {% endif %}
+        </div>
+
+        <div class="soft-card">
+            <h5>Create Backup</h5>
+            <p class="muted small mb-2">Creates a dated backup file in <strong>data/backups</strong>.</p>
+            <form method="post" action="{{ url_for('database_backup') }}">
+                <button class="btn btn-primary">Backup finance.db</button>
+            </form>
+        </div>
+
+        <div class="soft-card">
+            <h5>Import Database</h5>
+            <p class="muted small mb-2">Import a replacement SQLite database. A pre-import backup is created first.</p>
+            <form method="post" action="{{ url_for('database_import') }}" enctype="multipart/form-data" onsubmit="return confirm('Import this database and replace the current one? A pre-import backup will be created first.');">
+                <input class="form-control mb-2" type="file" name="database_file" accept=".db,.sqlite,.sqlite3" required>
+                <button class="btn btn-outline-primary">Import finance.db</button>
+            </form>
+        </div>
+    </div>
+
+    <h5>Available Backups</h5>
+    {% if database_backups %}
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Filename</th><th>Created / Modified</th><th>Size</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    {% for backup in database_backups %}
+                    <tr>
+                        <td><code>{{ backup.filename }}</code></td>
+                        <td>{{ backup.modified }}</td>
+                        <td>{{ backup.size }}</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('database_download_backup', filename=backup.filename) }}">Download</a>
+                                <form method="post" action="{{ url_for('database_restore') }}" onsubmit="return confirm('Restore this database backup? A pre-restore backup will be created first.');">
+                                    <input type="hidden" name="backup_filename" value="{{ backup.filename }}">
+                                    <button class="btn btn-sm btn-danger">Restore</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted mb-0">No backups found yet. Create a backup to populate this list.</p>
+    {% endif %}
+</section>
+
 <section class="panel mb-4">
     <h5>Metal Pricing</h5>
     <p class="muted">Live prices use GoldAPI when GOLDAPI_KEY is set. Manual prices are used as fallback.</p>
@@ -57,10 +127,11 @@
         <form method="post" action="{{ url_for('trading212_update_settings') }}" class="connection-form">
             <label>Environment</label>
             <select class="form-select" name="environment"><option value="demo" {% if t212_settings.environment == 'demo' %}selected{% endif %}>Demo</option><option value="live" {% if t212_settings.environment == 'live' %}selected{% endif %}>Live</option></select>
-            <label>Sync target account</label>
-            <select class="form-select" name="target_account_name">{% for account in t212_accounts %}<option value="{{ account.name }}" {% if account.name == t212_settings.target_account_name %}selected{% endif %}>{{ account.name }}</option>{% endfor %}</select>
-            <label>Auto-update account value</label>
-            <select class="form-select" name="auto_update_account"><option value="1" {% if t212_settings.auto_update_account %}selected{% endif %}>Yes</option><option value="0" {% if not t212_settings.auto_update_account %}selected{% endif %}>No</option></select>
+            <label>Account Balances row</label>
+            <div class="read-only-note">
+                Trading 212 sync automatically creates/updates <strong>{{ t212_auto_account_name }}</strong>
+                under <strong>{{ t212_auto_account_type }}</strong>. This row is read-only, marked Auto, and is recreated from cached sync data if an old manual Trading 212 account is deleted.
+            </div>
             <label>API key</label>
             <div>
                 <input class="form-control" name="api_key" type="password" autocomplete="off" placeholder="{% if t212_saved_credentials_present %}Saved — leave blank to keep current key{% else %}Paste Trading 212 API key{% endif %}">

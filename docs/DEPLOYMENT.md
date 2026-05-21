@@ -26,7 +26,7 @@ http://SERVER-IP:5000
 ```text
 /opt/investhome
 ├── app.py
-├── finance.db
+├── data/finance.db
 ├── .env
 ├── templates/
 ├── static/
@@ -71,7 +71,7 @@ http://127.0.0.1:5000
 The app stores its data in SQLite:
 
 ```text
-finance.db
+data/finance.db
 ```
 
 Back it up before updates:
@@ -88,4 +88,4 @@ backups/
 
 ## Trading 212
 
-Trading 212 sync is intentionally manual. The app should not call Trading 212 during page prefetch or ordinary page loads. This helps avoid rate limits.
+Trading 212 sync is intentionally manual. The app should not call Trading 212 during page prefetch or ordinary page loads. This helps avoid rate limits. Sync updates the provider-managed `Trading 212 ISA (Auto)` account row rather than a manually selected account.

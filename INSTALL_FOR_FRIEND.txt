@@ -1,4 +1,4 @@
-INVESTHOME FINANCE TRACKER v2.7.5 - EASY INSTALL
+INVESTHOME FINANCE TRACKER v2.8.4 - EASY INSTALL
 =================================================
 
 GitHub install:
@@ -25,14 +25,14 @@ TRADING 212 OPTIONAL SETUP
 ==========================
 
 Optional: add Trading 212 credentials in Settings → Trading 212 Connection after first launch.
-Credentials are saved in the application settings and can be overwritten from the same page.
+Credentials are saved in the application settings and can be overwritten from the same page. Sync creates/updates Trading 212 ISA (Auto) in Account Balances, which has a read-only synced value and is included in totals unless its Type is set to Ignore.
 
 UPDATING FROM AN OLDER VERSION
 ==============================
 
 Keep these files:
 
-   finance.db
+   data/finance.db
    .env
 
 Before updating:
@@ -46,7 +46,7 @@ RESETTING THE APP
 
 To start from fresh data:
 
-   rm finance.db
+   rm data/finance.db
    python3 app.py
 
 DO NOT COMMIT
@@ -55,6 +55,17 @@ DO NOT COMMIT
 Do not commit:
 
    .env
-   finance.db
+   data/finance.db
 
 These are already ignored by .gitignore.
+
+
+Database notes for v2.8.4:
+- The app stores the live SQLite database at data/finance.db.
+- If an older root-level finance.db exists, the app moves it into data/ on first launch.
+- Backups, imports, restores and undo-last-action are available from Settings -> Database.
+
+Data/display notes for v2.8.4:
+- Accounts page Type now includes Ignore. Ignored accounts remain visible but are excluded from dashboard statistics.
+- Trading 212 ISA (Auto) value remains managed by the API, but its dashboard Type can be changed locally.
+- Property page can include or ignore property equity in total net worth.

@@ -1,3 +1,56 @@
+v2.8.4
+- UI fix: Trading 212 Auto badge now renders as normal non-italic text.
+- Accounts: added Type option `Ignore` so accounts can stay visible but be excluded from dashboard statistics.
+- Accounts: auto-managed Trading 212 account value remains read-only, but its Type dropdown is now editable like other accounts.
+- Trading 212: sync/reconciliation no longer overwrites a user-selected Type for `Trading 212 ISA (Auto)`.
+- Property: added Include/Ignore option for whether property equity is counted in total net worth.
+- Dashboard: excludes Ignore accounts and ignored property equity from net worth, allocation, chart and growth statistics.
+
+v2.8.3
+- Bug fix: Trading 212 auto-managed Account Balances row is recreated from cached sync data even if the old manual account was deleted/archived.
+- Bug fix: Removed reliance on the legacy Auto-update account value toggle for Trading 212 consistency.
+- Settings: clarified that Trading 212 owns a read-only auto row.
+
+# v2.8.3 - Trading 212 Cached Value Reconciliation
+
+- Fixed Trading 212 value discrepancies across pages after upgrading from v2.8.1.
+- The last cached Trading 212 sync now reconciles into `Trading 212 ISA (Auto)` before Accounts, Dashboard, Compound Interest, and Trading 212 pages render.
+- Existing manual `Trading212 ISA` / `Trading 212 ISA` rows are converted to the API-managed row even before the next live API sync.
+- Duplicate manual Trading 212 placeholder rows are archived to prevent double-counting.
+- Account Balances and Compound Interest now use the cached Trading 212 portfolio total until the next API sync refreshes it.
+- Updated VERSION.txt and package/folder naming to v2.8.3.
+
+# v2.8.1 - Trading 212 Auto-Managed Account Row
+
+- Bug fix / small logic update.
+- Trading 212 sync no longer targets a manually selected account or broad category such as `Stocks and Shares ISA`.
+- Added `source_provider` and `is_auto_managed` account metadata.
+- Trading 212 sync now creates/updates `Trading 212 ISA (Auto)`.
+- Existing manual `Trading212 ISA` / `Trading 212 ISA` rows are converted into the auto-managed row on sync.
+- Auto-managed rows remain visible in Account Balances and included in dashboard/net-worth totals.
+- Auto-managed rows are read-only: no add/remove, no update total value, no type changes and no delete button.
+- Updated VERSION.txt and package/folder naming to v2.8.1.
+
+# v2.8.0 - Data Organisation and Settings Database Tools
+
+- Moved the active SQLite database path from `finance.db` to `data/finance.db`.
+- Added automatic migration for existing root-level `finance.db`, `finance.db-wal`, and `finance.db-shm` files.
+- Added Settings -> Database subsection.
+- Added dated database backup creation into `data/backups`.
+- Added backup listing with download and restore actions.
+- Added database import from Settings with integrity check and pre-import backup.
+- Added undo-last-user-action support using a pre-action database copy in `data/undo`.
+- Updated backup script to use the new data folder and SQLite backup API.
+- Updated project framework documentation for future AI continuity.
+
+v2.7.6 - Lifetime ISA Bonus Timing Fix
+- Changed Lifetime ISA deposit logic so the 25% government bonus is not added automatically at deposit time.
+- LISA deposits now increase the account value by the actual deposited amount only.
+- When the provider bonus actually arrives, use Update Total Value so it is recorded as a real value change/growth.
+- Updated app comments/docs to clarify LISA bonus handling.
+- Renamed the packaged release folder to investhome-v2.7.6.
+- Removed release ZIP clutter such as __pycache__ files.
+
 v2.7.5 - Remove Broad CSS Auto-Scaling
 - Removed the broad v2.7.3 CSS auto-scaling block from static/style.css.
 - Kept the targeted v2.7.4 Budget page Total Assigned / Floating Left readability sizing.
@@ -449,3 +502,4 @@ Notes
 - Existing separate Stocks and Shares ISA, Lifetime ISA, and Pension charts remain underneath for detailed views.
 - Updated Performance page heading and explanatory text.
 - Updated VERSION.txt and package/folder naming to v2.5.0.
+

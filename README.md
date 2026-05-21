@@ -1,4 +1,4 @@
-# InvestHome Finance Tracker v2.7.5 (still in "development")
+# InvestHome Finance Tracker v2.8.4
 
 > **AI SLOP WARNING**  
 > Built by a Network Engineer who has no business pretending to be a full-stack developer.
@@ -9,9 +9,9 @@ InvestHome is a self-hosted personal finance dashboard built with **Python**, **
 ## What it tracks
 
 - Total net worth across accessible assets, pension and property equity
-- Emergency, liquid, short-term, mid-term and long-term account buckets
+- Emergency, liquid, short-term, mid-term, long-term and ignored account buckets
 - Stocks and Shares ISA performance
-- Lifetime ISA performance, including the 25% LISA bonus treated as growth
+- Lifetime ISA performance, with provider bonus/value changes treated as growth once they actually appear
 - Pension tracking on a separate long-term view
 - Physical bullion with optional live gold/silver pricing
 - Property value, mortgage remaining and equity
@@ -22,20 +22,25 @@ InvestHome is a self-hosted personal finance dashboard built with **Python**, **
 ## Current version
 
 ```text
-v2.7.5
+v2.8.4
 ```
 
 Highlights in this version:
 
-- Packaged folder is versioned as `investhome-v2.7.5`
-- Clean release ZIP removes screenshot clutter, pycache/build artefacts, and old release-note history
-- `AI_PROJECT_FRAMEWORK.md` added so future AI imports keep continuity
-- Budget page Total Assigned and Floating Left values have been enlarged
-- Accounts page Add/Remove and Update Total Value forms remain simplified without notes fields
-- Card/box text auto-scales and wraps safely on smaller screens
+- Runtime database moved from the project root to `data/finance.db`
+- Existing root-level `finance.db` files are migrated automatically on first launch
+- Settings now includes a Database subsection for backup, import, restore and undo-last-action
+- Database backups are stored in `data/backups` with date-stamped filenames
+- Undo support stores a pre-action copy in `data/undo` before user POST actions
+- Packaged folder is versioned as `investhome-v2.8.4`
 - Modern light InvestHome UI
 - Safe page prefetching for faster navigation
 - Trading 212 sync remains manual to avoid API rate limits
+- Trading 212 sync now creates/updates `Trading 212 ISA (Auto)` instead of targeting manual account rows
+- API-managed account values are read-only on the Accounts page and contribute to dashboard/net-worth totals unless their Type is set to `Ignore`
+- Accounts can be marked with Type `Ignore` to keep them visible in Account Balances while excluding them from dashboard statistics
+- Trading 212 ISA (Auto) keeps its synced value read-only, but its dashboard Type can now be changed using the same dropdown as manual accounts
+- Property page now has Include/Ignore control for whether property equity appears in total net worth
 - Version number displayed under the snapshot button
 - `CHANGELOG.txt` included for release history
 
@@ -85,16 +90,18 @@ GOLDAPI_KEY=
 FLASK_SECRET_KEY=change-me
 ```
 
-Trading 212 credentials are only needed if you want the read-only Trading 212 sync section. Enter them in Settings → Trading 212 Connection after launching the app.
+Trading 212 credentials are only needed if you want the read-only Trading 212 sync section. Enter them in Settings → Trading 212 Connection after launching the app. When synced, the app creates/updates `Trading 212 ISA (Auto)` in Account Balances.
 
 ## Updating an existing install
 
 Keep these files:
 
 ```text
-finance.db
+data/finance.db
 .env
 ```
+
+For older installs, if `finance.db` still exists in the project root, v2.8.4 will move it to `data/finance.db` automatically on first launch.
 
 Then pull/copy the new app files over the top and restart Flask.
 
@@ -103,6 +110,8 @@ Before updating, back up your database:
 ```bash
 ./scripts/backup_db.sh
 ```
+
+You can also create and restore dated backups from Settings → Database.
 
 ## Running as a service
 
@@ -146,7 +155,9 @@ Do not commit these files:
 
 ```text
 .env
-finance.db
+data/finance.db
+data/backups/*.db
+data/undo/*.db
 ```
 
 They are ignored in `.gitignore`.

@@ -2,23 +2,179 @@ import csv
 import io
 import json
 import os
+import shutil
 import sqlite3
+import tempfile
 from datetime import date, datetime
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, Response, flash, redirect, render_template, request, url_for
+from flask import Flask, Response, flash, redirect, render_template, request, send_file, url_for
 
 load_dotenv()
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_NAME = os.path.join(APP_DIR, "finance.db")
+DATA_DIR = os.path.join(APP_DIR, "data")
+DB_BACKUP_DIR = os.path.join(DATA_DIR, "backups")
+DB_UNDO_DIR = os.path.join(DATA_DIR, "undo")
+LEGACY_DB_NAME = os.path.join(APP_DIR, "finance.db")
+DB_NAME = os.path.join(DATA_DIR, "finance.db")
 GOLDAPI_KEY = os.getenv("GOLDAPI_KEY", "").strip()
-APP_VERSION = "2.7.5"
+APP_VERSION = "2.8.4"
+
+TRADING212_PROVIDER = "trading212"
+TRADING212_AUTO_ACCOUNT_NAME = "Trading 212 ISA (Auto)"
+TRADING212_AUTO_ACCOUNT_TYPE = "Stocks and Shares ISA"
+TRADING212_AUTO_TERM_TYPE = "Mid Term"
+
+
+def ensure_database_storage():
+    """Keep runtime data out of the project root and migrate old installs safely."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(DB_BACKUP_DIR, exist_ok=True)
+    os.makedirs(DB_UNDO_DIR, exist_ok=True)
+
+    if os.path.exists(LEGACY_DB_NAME) and not os.path.exists(DB_NAME):
+        os.replace(LEGACY_DB_NAME, DB_NAME)
+        for suffix in ("-wal", "-shm"):
+            legacy_sidecar = LEGACY_DB_NAME + suffix
+            new_sidecar = DB_NAME + suffix
+            if os.path.exists(legacy_sidecar):
+                os.replace(legacy_sidecar, new_sidecar)
+
+
+def timestamp_for_filename():
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def human_file_size(size_bytes):
+    try:
+        size = float(size_bytes)
+    except (TypeError, ValueError):
+        size = 0.0
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:.1f} {unit}" if unit != "B" else f"{int(size)} {unit}"
+        size /= 1024
+
+
+def validate_sqlite_database(path):
+    try:
+        conn = sqlite3.connect(path)
+        result = conn.execute("PRAGMA integrity_check").fetchone()[0]
+        conn.close()
+        return result == "ok", result
+    except Exception as exc:
+        return False, str(exc)
+
+
+def create_database_backup(prefix="manual"):
+    """Create a consistent SQLite backup with a date-stamped filename."""
+    ensure_database_storage()
+    if not os.path.exists(DB_NAME):
+        return None
+
+    filename = f"finance_{timestamp_for_filename()}_{prefix}.db"
+    destination = os.path.join(DB_BACKUP_DIR, filename)
+    source_conn = sqlite3.connect(DB_NAME)
+    backup_conn = sqlite3.connect(destination)
+    try:
+        source_conn.backup(backup_conn)
+    finally:
+        backup_conn.close()
+        source_conn.close()
+    return destination
+
+
+def list_database_backups():
+    ensure_database_storage()
+    backups = []
+    for filename in os.listdir(DB_BACKUP_DIR):
+        if not filename.lower().endswith((".db", ".sqlite", ".sqlite3")):
+            continue
+        path = os.path.join(DB_BACKUP_DIR, filename)
+        if not os.path.isfile(path):
+            continue
+        stat = os.stat(path)
+        backups.append({
+            "filename": filename,
+            "size": human_file_size(stat.st_size),
+            "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+        })
+    backups.sort(key=lambda item: item["modified"], reverse=True)
+    return backups
+
+
+def save_undo_point(description="Last database action"):
+    """Store the database state before a user POST so it can be restored once."""
+    ensure_database_storage()
+    if not os.path.exists(DB_NAME):
+        return False
+
+    undo_path = os.path.join(DB_UNDO_DIR, "last_before_action.db")
+    source_conn = sqlite3.connect(DB_NAME)
+    undo_conn = sqlite3.connect(undo_path)
+    try:
+        source_conn.backup(undo_conn)
+    finally:
+        undo_conn.close()
+        source_conn.close()
+
+    meta_path = os.path.join(DB_UNDO_DIR, "last_before_action.txt")
+    with open(meta_path, "w", encoding="utf-8") as handle:
+        handle.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {description}\n")
+    return True
+
+
+def get_undo_status():
+    ensure_database_storage()
+    undo_path = os.path.join(DB_UNDO_DIR, "last_before_action.db")
+    meta_path = os.path.join(DB_UNDO_DIR, "last_before_action.txt")
+    status = {"available": os.path.exists(undo_path), "description": None}
+    if os.path.exists(meta_path):
+        with open(meta_path, "r", encoding="utf-8") as handle:
+            status["description"] = handle.read().strip()
+    return status
+
+
+def replace_current_database(source_path):
+    """Replace the active SQLite DB and clear stale WAL sidecar files."""
+    ensure_database_storage()
+    ok, message = validate_sqlite_database(source_path)
+    if not ok:
+        raise ValueError(f"Selected database failed integrity check: {message}")
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+    for suffix in ("", "-wal", "-shm"):
+        target = DB_NAME + suffix
+        if os.path.exists(target):
+            os.remove(target)
+    shutil.copy2(source_path, DB_NAME)
+
+
+ensure_database_storage()
 
 app = Flask(__name__)
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-change-me")
+
+
+@app.before_request
+def create_database_undo_point():
+    """Capture the DB before user POST actions so Settings can undo the last action."""
+    skip_endpoints = {
+        "database_backup",
+        "database_download_backup",
+        "database_undo",
+    }
+    if request.method != "POST" or request.endpoint in skip_endpoints:
+        return
+    try:
+        save_undo_point(request.endpoint or request.path)
+    except Exception:
+        # Undo support should never block the app from accepting a normal action.
+        pass
+
 
 ACCOUNT_TYPES = [
     "Emergency Fund",
@@ -30,7 +186,7 @@ ACCOUNT_TYPES = [
     "Physical Bullion",
 ]
 
-TERM_TYPES = ["Emergency", "Liquid", "Short Term", "Mid Term", "Long Term"]
+TERM_TYPES = ["Emergency", "Liquid", "Short Term", "Mid Term", "Long Term", "Ignore"]
 
 
 @app.context_processor
@@ -84,9 +240,10 @@ def default_term_for_account(account_type):
 def is_lifetime_isa(account):
     """Return True for Lifetime ISA accounts by name or category.
 
-    LISA government bonus handling is intentionally applied only when
-    adding new money to the account. The bonus is treated as growth/value
-    change, not as user contribution.
+    Lifetime ISA deposits are recorded at the actual deposited amount only.
+    The 25% government bonus is not added automatically because it can arrive
+    weeks later. When the bonus appears in the provider account, update the
+    account total value so it is recorded as a real value change/growth.
     """
     name = str(account["name"] or "").lower()
     account_type = str(account["account_type"] or "").lower()
@@ -124,10 +281,16 @@ def init_db():
     account_columns = [row["name"] for row in cur.execute("PRAGMA table_info(accounts)").fetchall()]
     if "term_type" not in account_columns:
         cur.execute("ALTER TABLE accounts ADD COLUMN term_type TEXT NOT NULL DEFAULT 'Mid Term'")
+    if "include_in_net_worth" not in account_columns:
+        cur.execute("ALTER TABLE accounts ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1")
     if "is_archived" not in account_columns:
         cur.execute("ALTER TABLE accounts ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0")
     if "archived_at" not in account_columns:
         cur.execute("ALTER TABLE accounts ADD COLUMN archived_at TEXT")
+    if "source_provider" not in account_columns:
+        cur.execute("ALTER TABLE accounts ADD COLUMN source_provider TEXT")
+    if "is_auto_managed" not in account_columns:
+        cur.execute("ALTER TABLE accounts ADD COLUMN is_auto_managed INTEGER NOT NULL DEFAULT 0")
 
     cur.execute(
         """
@@ -268,12 +431,15 @@ def init_db():
     """)
 
     cur.execute("INSERT OR IGNORE INTO property_settings (id, home_value, mortgage_left) VALUES (1, 0, 0)")
+    property_columns = [row["name"] for row in cur.execute("PRAGMA table_info(property_settings)").fetchall()]
+    if "include_in_net_worth" not in property_columns:
+        cur.execute("ALTER TABLE property_settings ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS trading212_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             environment TEXT NOT NULL DEFAULT 'demo',
-            target_account_name TEXT NOT NULL DEFAULT 'Stocks and Shares ISA',
+            target_account_name TEXT NOT NULL DEFAULT 'Trading 212 ISA (Auto)',
             auto_update_account INTEGER NOT NULL DEFAULT 1,
             last_sync_at TIMESTAMP,
             cash_value REAL NOT NULL DEFAULT 0,
@@ -340,8 +506,17 @@ def init_db():
     cur.execute("""
         INSERT OR IGNORE INTO trading212_settings
         (id, environment, target_account_name, auto_update_account)
-        VALUES (1, 'demo', 'Stocks and Shares ISA', 1)
+        VALUES (1, 'demo', 'Trading 212 ISA (Auto)', 1)
     """)
+    cur.execute(
+        """
+        UPDATE trading212_settings
+        SET target_account_name = ?
+        WHERE id = 1
+          AND (target_account_name IS NULL OR target_account_name = '' OR target_account_name = 'Stocks and Shares ISA')
+        """,
+        (TRADING212_AUTO_ACCOUNT_NAME,),
+    )
 
     defaults = {
         "manual_gold_gbp_per_g": "60.00",
@@ -513,9 +688,9 @@ app.before_request(ensure_daily_snapshot)
 def performance_rows(conn, pension_only=False):
     sync_bullion_account(conn)
     if pension_only:
-        accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND account_type = 'Pension' ORDER BY account_type, name").fetchall()
+        accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND COALESCE(term_type, '') != 'Ignore' AND account_type = 'Pension' ORDER BY account_type, name").fetchall()
     else:
-        accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND account_type != 'Pension' ORDER BY account_type, name").fetchall()
+        accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND COALESCE(term_type, '') != 'Ignore' AND account_type != 'Pension' ORDER BY account_type, name").fetchall()
     rows = []
     total_current = total_contributions = total_growth = 0.0
 
@@ -571,6 +746,8 @@ def monthly_performance(conn, pension_only=False):
         FROM transactions t
         JOIN accounts a ON a.id = t.account_id
         WHERE 1 = 1 {filter_sql}
+          AND COALESCE(a.term_type, '') != 'Ignore'
+          AND COALESCE(a.is_archived, 0) = 0
         GROUP BY substr(t.created_at, 1, 7)
         ORDER BY month
         """
@@ -752,15 +929,15 @@ def _performance_contribution_baseline(conn, account, snap_date=None):
     add/remove transactions makes the first imported balance appear as growth.
     For non-LISA long-term accounts, treat the first positive snapshot as the
     opening baseline whenever it is larger than the explicit contributions known
-    at that point. Lifetime ISA keeps explicit contributions only, so the 25%
-    government bonus continues to show as growth.
+    at that point. Lifetime ISA keeps explicit contributions only, so any real
+    bonus/value change recorded later via Update Total Value shows as growth.
     """
     account_id = account["id"]
     category = account["account_type"]
 
     explicit_total = _transaction_contributions(conn, account_id, snap_date=snap_date)
 
-    # LISA bonus is intentionally treated as growth in this app.
+    # LISA bonus/value changes are intentionally not counted as contributions.
     if category == "Lifetime ISA":
         return explicit_total
 
@@ -797,6 +974,7 @@ def _build_combined_category_chart(conn, title, category_name):
         FROM accounts
         WHERE include_in_net_worth = 1
           AND COALESCE(is_archived, 0) = 0
+          AND COALESCE(term_type, '') != 'Ignore'
           AND account_type = ?
         ORDER BY name, id
         """,
@@ -879,6 +1057,7 @@ def _build_combined_long_term_chart(conn):
         FROM accounts
         WHERE include_in_net_worth = 1
           AND COALESCE(is_archived, 0) = 0
+          AND COALESCE(term_type, '') != 'Ignore'
           AND account_type IN ({placeholders})
           AND (
                 COALESCE(current_value, 0) != 0
@@ -988,6 +1167,228 @@ class Trading212RateLimitError(RuntimeError):
         if self.reset_at:
             message += f". Try again after {self.reset_at}"
         super().__init__(message)
+
+
+def is_auto_managed_account(account):
+    """Return True when an account value is owned by an external/API provider."""
+    if not account:
+        return False
+    try:
+        keys = account.keys()
+        source_provider = str(account["source_provider"] or "").strip().lower() if "source_provider" in keys else ""
+        is_auto_managed = int(account["is_auto_managed"] or 0) == 1 if "is_auto_managed" in keys else False
+    except Exception:
+        return False
+    return is_auto_managed or bool(source_provider)
+
+
+def is_trading212_auto_account(account):
+    """Return True when an account is the Trading 212 API-managed account row."""
+    if not account:
+        return False
+    try:
+        keys = account.keys()
+        source_provider = str(account["source_provider"] or "").strip().lower() if "source_provider" in keys else ""
+        is_auto_managed = int(account["is_auto_managed"] or 0) == 1 if "is_auto_managed" in keys else False
+    except Exception:
+        return False
+    return source_provider == TRADING212_PROVIDER and is_auto_managed
+
+
+def trading212_get_or_create_auto_account(conn):
+    """Return the Trading 212 API-managed account, converting an old manual row if present.
+
+    This avoids broad category matching such as 'Stocks and Shares ISA', which could
+    accidentally update unrelated accounts like Monzo, Vanguard or AJ Bell.
+    """
+    conn.execute("INSERT OR IGNORE INTO account_types (name) VALUES (?)", (TRADING212_AUTO_ACCOUNT_TYPE,))
+
+    target = conn.execute(
+        """
+        SELECT * FROM accounts
+        WHERE COALESCE(is_archived, 0) = 0
+          AND COALESCE(source_provider, '') = ?
+          AND COALESCE(is_auto_managed, 0) = 1
+        ORDER BY id
+        LIMIT 1
+        """,
+        (TRADING212_PROVIDER,),
+    ).fetchone()
+
+    if not target:
+        target = conn.execute(
+            """
+            SELECT * FROM accounts
+            WHERE COALESCE(is_archived, 0) = 0
+              AND COALESCE(source_provider, '') = ''
+              AND LOWER(REPLACE(name, ' ', '')) IN ('trading212isa', 'trading212')
+            ORDER BY id
+            LIMIT 1
+            """
+        ).fetchone()
+
+    if not target:
+        target = conn.execute(
+            """
+            SELECT * FROM accounts
+            WHERE COALESCE(is_archived, 0) = 0
+              AND name = ?
+            ORDER BY id
+            LIMIT 1
+            """,
+            (TRADING212_AUTO_ACCOUNT_NAME,),
+        ).fetchone()
+
+    if target:
+        conn.execute(
+            """
+            UPDATE accounts
+            SET name = ?,
+                account_type = ?,
+                term_type = CASE
+                    WHEN term_type IS NULL OR term_type = '' THEN ?
+                    ELSE term_type
+                END,
+                source_provider = ?,
+                is_auto_managed = 1
+            WHERE id = ?
+            """,
+            (
+                TRADING212_AUTO_ACCOUNT_NAME,
+                TRADING212_AUTO_ACCOUNT_TYPE,
+                TRADING212_AUTO_TERM_TYPE,
+                TRADING212_PROVIDER,
+                target["id"],
+            ),
+        )
+        return conn.execute("SELECT * FROM accounts WHERE id = ?", (target["id"],)).fetchone()
+
+    conn.execute(
+        """
+        INSERT INTO accounts
+        (name, account_type, term_type, current_value, source_provider, is_auto_managed)
+        VALUES (?, ?, ?, 0, ?, 1)
+        """,
+        (
+            TRADING212_AUTO_ACCOUNT_NAME,
+            TRADING212_AUTO_ACCOUNT_TYPE,
+            TRADING212_AUTO_TERM_TYPE,
+            TRADING212_PROVIDER,
+        ),
+    )
+    new_id = conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+    return conn.execute("SELECT * FROM accounts WHERE id = ?", (new_id,)).fetchone()
+
+
+def trading212_archive_duplicate_accounts(conn, keep_account_id):
+    """Hide duplicate Trading 212 rows once the provider-managed row exists."""
+    conn.execute(
+        """
+        UPDATE accounts
+        SET is_archived = 1,
+            archived_at = CURRENT_TIMESTAMP
+        WHERE COALESCE(is_archived, 0) = 0
+          AND id != ?
+          AND (
+              COALESCE(source_provider, '') = ?
+              OR LOWER(REPLACE(name, ' ', '')) IN ('trading212isa', 'trading212', 'trading212isa(auto)')
+          )
+        """,
+        (keep_account_id, TRADING212_PROVIDER),
+    )
+
+
+def trading212_cached_total(settings):
+    """Return the last known Trading 212 total from cached sync settings."""
+    if not settings:
+        return 0.0
+    keys = settings.keys()
+    try:
+        if "portfolio_total" in keys and settings["portfolio_total"] is not None:
+            return round(float(settings["portfolio_total"] or 0), 2)
+        cash = float(settings["cash_value"] or 0) if "cash_value" in keys else 0.0
+        holdings = float(settings["holdings_value"] or 0) if "holdings_value" in keys else 0.0
+        return round(cash + holdings, 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def trading212_has_cached_sync(settings):
+    """Return True once Trading 212 has produced at least one cached sync.
+
+    v2.8.2 still respected the older auto_update_account toggle. If that toggle
+    was off, deleting the manual Trading212 ISA row left no active Account
+    Balances row even though the Trading 212 page had a cached value. From
+    v2.8.3 the Account Balances row is part of the integration and is recreated
+    whenever a cached sync exists.
+    """
+    if not settings:
+        return False
+    keys = settings.keys()
+    last_sync_at = settings["last_sync_at"] if "last_sync_at" in keys else None
+    return bool(last_sync_at)
+
+
+def trading212_reconcile_auto_account_from_cache(conn, make_snapshot=True):
+    """Mirror the latest cached Trading 212 sync into Account Balances.
+
+    The Trading 212 page, Accounts, Dashboard and Compound Interest pages should
+    all read the same Trading 212 value. The auto-managed account is now always
+    recreated from cached Trading 212 data, even if an old manual account was
+    deleted/archived or the legacy auto-update toggle was switched off.
+    """
+    settings = trading212_get_settings(conn)
+    if not trading212_has_cached_sync(settings):
+        return None
+
+    # Keep legacy installs aligned: this integration always manages its own
+    # Account Balances row. The column remains for compatibility only.
+    if "auto_update_account" in settings.keys() and int(settings["auto_update_account"] or 0) != 1:
+        conn.execute("UPDATE trading212_settings SET auto_update_account = 1 WHERE id = 1")
+
+    portfolio_total = trading212_cached_total(settings)
+    target = trading212_get_or_create_auto_account(conn)
+    old_value = float(target["current_value"] or 0)
+    delta = round(portfolio_total - old_value, 2)
+
+    if delta:
+        conn.execute(
+            "INSERT INTO transactions (account_id, transaction_type, amount, note) VALUES (?, 'value_update', ?, ?)",
+            (target["id"], delta, f"Trading 212 cached sync reconciled {TRADING212_AUTO_ACCOUNT_NAME} from {format_money(old_value)} to {format_money(portfolio_total)}"),
+        )
+
+    conn.execute(
+        """
+        UPDATE accounts
+        SET current_value = ?,
+            name = ?,
+            account_type = ?,
+            term_type = CASE
+                WHEN term_type IS NULL OR term_type = '' THEN ?
+                ELSE term_type
+            END,
+            source_provider = ?,
+            is_auto_managed = 1,
+            is_archived = 0,
+            archived_at = NULL
+        WHERE id = ?
+        """,
+        (
+            portfolio_total,
+            TRADING212_AUTO_ACCOUNT_NAME,
+            TRADING212_AUTO_ACCOUNT_TYPE,
+            TRADING212_AUTO_TERM_TYPE,
+            TRADING212_PROVIDER,
+            target["id"],
+        ),
+    )
+    trading212_archive_duplicate_accounts(conn, target["id"])
+
+    if make_snapshot and delta:
+        take_snapshot(conn)
+
+    conn.commit()
+    return conn.execute("SELECT * FROM accounts WHERE id = ?", (target["id"],)).fetchone()
 
 
 def trading212_get_credentials(conn=None):
@@ -1113,7 +1514,7 @@ def trading212_get_settings(conn):
         conn.execute("""
             INSERT OR IGNORE INTO trading212_settings
             (id, environment, target_account_name, auto_update_account)
-            VALUES (1, 'demo', 'Stocks and Shares ISA', 1)
+            VALUES (1, 'demo', 'Trading 212 ISA (Auto)', 1)
         """)
         conn.commit()
         row = conn.execute("SELECT * FROM trading212_settings WHERE id = 1").fetchone()
@@ -1129,15 +1530,18 @@ def trading212_log(conn, status, message):
 
 
 def trading212_sync(conn):
-    """Read-only sync: cash + open positions -> target S&S ISA account value.
+    """Read-only sync: cash + open positions -> Trading 212 API-managed account value.
 
     Normalises GBX share prices into GBP before calculating values. GBX is pence, so
     1,234 GBX becomes £12.34 rather than £1,234.00.
     """
     settings = trading212_get_settings(conn)
     environment = settings["environment"]
-    target_account_name = settings["target_account_name"] or "Stocks and Shares ISA"
-    auto_update = int(settings["auto_update_account"] or 0) == 1
+
+    # The Trading 212 integration owns a read-only Account Balances row. Keep
+    # the old setting forced on so all pages stay consistent after each sync.
+    if "auto_update_account" in settings.keys() and int(settings["auto_update_account"] or 0) != 1:
+        conn.execute("UPDATE trading212_settings SET auto_update_account = 1 WHERE id = 1")
 
     summary = trading212_api_get(environment, "/equity/account/summary")
     positions = trading212_api_get(environment, "/equity/positions")
@@ -1216,31 +1620,41 @@ def trading212_sync(conn):
     # Avoid double-counting summary totalValue. Total = account-currency holdings + free/pie cash.
     portfolio_total = round(cash + holdings_value, 2)
 
-    if auto_update:
-        target = conn.execute(
-            "SELECT * FROM accounts WHERE COALESCE(is_archived, 0) = 0 AND (name = ? OR account_type = ?) ORDER BY id LIMIT 1",
-            (target_account_name, target_account_name),
-        ).fetchone()
-        if not target:
-            conn.execute("INSERT OR IGNORE INTO account_types (name) VALUES (?)", (target_account_name,))
-            conn.execute(
-                "INSERT INTO accounts (name, account_type, term_type, current_value) VALUES (?, ?, ?, 0)",
-                (target_account_name, target_account_name, default_term_for_account(target_account_name)),
-            )
-            target = conn.execute(
-                "SELECT * FROM accounts WHERE name = ? OR account_type = ? ORDER BY id LIMIT 1",
-                (target_account_name, target_account_name),
-            ).fetchone()
-
-        old_value = float(target["current_value"] or 0)
-        delta = round(portfolio_total - old_value, 2)
-        if delta:
-            conn.execute(
-                "INSERT INTO transactions (account_id, transaction_type, amount, note) VALUES (?, 'value_update', ?, ?)",
-                (target["id"], delta, f"Trading 212 sync updated value from {format_money(old_value)} to {format_money(portfolio_total)}"),
-            )
-        conn.execute("UPDATE accounts SET current_value = ? WHERE id = ?", (portfolio_total, target["id"]))
-        take_snapshot(conn)
+    target = trading212_get_or_create_auto_account(conn)
+    old_value = float(target["current_value"] or 0)
+    delta = round(portfolio_total - old_value, 2)
+    if delta:
+        conn.execute(
+            "INSERT INTO transactions (account_id, transaction_type, amount, note) VALUES (?, 'value_update', ?, ?)",
+            (target["id"], delta, f"Trading 212 API sync updated {TRADING212_AUTO_ACCOUNT_NAME} from {format_money(old_value)} to {format_money(portfolio_total)}"),
+        )
+    conn.execute(
+        """
+        UPDATE accounts
+        SET current_value = ?,
+            name = ?,
+            account_type = ?,
+            term_type = CASE
+                WHEN term_type IS NULL OR term_type = '' THEN ?
+                ELSE term_type
+            END,
+            source_provider = ?,
+            is_auto_managed = 1,
+            is_archived = 0,
+            archived_at = NULL
+        WHERE id = ?
+        """,
+        (
+            portfolio_total,
+            TRADING212_AUTO_ACCOUNT_NAME,
+            TRADING212_AUTO_ACCOUNT_TYPE,
+            TRADING212_AUTO_TERM_TYPE,
+            TRADING212_PROVIDER,
+            target["id"],
+        ),
+    )
+    trading212_archive_duplicate_accounts(conn, target["id"])
+    take_snapshot(conn)
 
     conn.execute(
         """
@@ -1304,6 +1718,7 @@ def compound_accounts(conn):
         SELECT * FROM accounts
         WHERE COALESCE(is_archived, 0) = 0
           AND include_in_net_worth = 1
+          AND COALESCE(term_type, '') != 'Ignore'
           AND COALESCE(current_value, 0) > 0
           AND (
               account_type IN ('Pension', 'Lifetime ISA', 'Stocks and Shares ISA')
@@ -1319,25 +1734,48 @@ def compound_accounts(conn):
     ).fetchall()
 
 def dashboard_payload(conn):
+    trading212_reconcile_auto_account_from_cache(conn)
     sync_bullion_account(conn)
-    accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND account_type != 'Pension' ORDER BY account_type").fetchall()
+    accounts = conn.execute("""
+        SELECT * FROM accounts
+        WHERE include_in_net_worth = 1
+          AND COALESCE(is_archived, 0) = 0
+          AND account_type != 'Pension'
+          AND COALESCE(term_type, '') != 'Ignore'
+        ORDER BY account_type
+    """).fetchall()
     total = sum(a["current_value"] for a in accounts)
 
     # Main-dashboard buckets are driven by the editable term_type dropdown on Accounts.
+    # Accounts marked as Ignore are excluded from dashboard statistics and charts.
     emergency = sum(a["current_value"] for a in accounts if a["term_type"] == "Emergency")
     liquid = sum(a["current_value"] for a in accounts if a["term_type"] == "Liquid")
     short_term = sum(a["current_value"] for a in accounts if a["term_type"] == "Short Term")
     mid_term = sum(a["current_value"] for a in accounts if a["term_type"] == "Mid Term")
     long_term = sum(a["current_value"] for a in accounts if a["term_type"] == "Long Term")
-    pension = conn.execute("SELECT COALESCE(SUM(current_value), 0) AS total FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND account_type = 'Pension'").fetchone()["total"]
+    pension = conn.execute("""
+        SELECT COALESCE(SUM(current_value), 0) AS total
+        FROM accounts
+        WHERE include_in_net_worth = 1
+          AND COALESCE(is_archived, 0) = 0
+          AND account_type = 'Pension'
+          AND COALESCE(term_type, '') != 'Ignore'
+    """).fetchone()["total"]
 
-    property_row = conn.execute("SELECT home_value, mortgage_left FROM property_settings WHERE id = 1").fetchone()
+    conn.execute("INSERT OR IGNORE INTO property_settings (id, home_value, mortgage_left) VALUES (1, 0, 0)")
+    property_columns = [row["name"] for row in conn.execute("PRAGMA table_info(property_settings)").fetchall()]
+    if "include_in_net_worth" not in property_columns:
+        conn.execute("ALTER TABLE property_settings ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1")
+        conn.commit()
+    property_row = conn.execute("SELECT home_value, mortgage_left, include_in_net_worth FROM property_settings WHERE id = 1").fetchone()
     property_home_value = float(property_row["home_value"] or 0) if property_row else 0.0
     property_mortgage_left = float(property_row["mortgage_left"] or 0) if property_row else 0.0
+    property_include_in_net_worth = bool(int(property_row["include_in_net_worth"] or 0)) if property_row and "include_in_net_worth" in property_row.keys() else True
     property_equity = max(property_home_value - property_mortgage_left, 0)
+    property_equity_for_totals = property_equity if property_include_in_net_worth else 0
     mortgage_ltv = round((property_mortgage_left / property_home_value) * 100, 2) if property_home_value else 0
 
-    total_all_assets = total + float(pension or 0) + property_equity
+    total_all_assets = total + float(pension or 0) + property_equity_for_totals
 
     # Allocation chart includes all positive high-level asset buckets.
     category = {
@@ -1347,7 +1785,7 @@ def dashboard_payload(conn):
         "Mid Term": mid_term,
         "Long Term": long_term,
         "Pension": float(pension or 0),
-        "Property Equity": property_equity,
+        "Property Equity": property_equity_for_totals,
     }
     category = {k: v for k, v in category.items() if v and v > 0}
 
@@ -1357,6 +1795,8 @@ def dashboard_payload(conn):
         FROM snapshots s
         JOIN accounts a ON a.id = s.account_id
         WHERE COALESCE(a.is_archived, 0) = 0
+          AND COALESCE(a.include_in_net_worth, 1) = 1
+          AND COALESCE(a.term_type, '') != 'Ignore'
         GROUP BY s.snapshot_date
         ORDER BY s.snapshot_date
         """
@@ -1367,6 +1807,8 @@ def dashboard_payload(conn):
         SELECT t.*, a.name AS account_name, a.account_type
         FROM transactions t
         JOIN accounts a ON a.id = t.account_id
+        WHERE COALESCE(a.term_type, '') != 'Ignore'
+          AND COALESCE(a.is_archived, 0) = 0
         ORDER BY t.created_at DESC
         LIMIT 6
         """
@@ -1410,6 +1852,7 @@ def dashboard_payload(conn):
         "property_home_value": round(property_home_value, 2),
         "property_mortgage_left": round(property_mortgage_left, 2),
         "property_equity": round(property_equity, 2),
+        "property_include_in_net_worth": property_include_in_net_worth,
         "mortgage_ltv": mortgage_ltv,
         "total_all_assets": round(total_all_assets, 2),
         "category_labels": json.dumps(list(category.keys())),
@@ -1446,6 +1889,7 @@ def dashboard():
 @app.route("/accounts")
 def accounts():
     conn = get_db()
+    trading212_reconcile_auto_account_from_cache(conn)
     sync_bullion_account(conn)
     accounts = conn.execute("SELECT * FROM accounts WHERE COALESCE(is_archived, 0) = 0 ORDER BY account_type, name").fetchall()
     archived_accounts = conn.execute("SELECT * FROM accounts WHERE COALESCE(is_archived, 0) = 1 ORDER BY archived_at DESC, account_type, name").fetchall()
@@ -1501,30 +1945,25 @@ def add_transaction():
         conn.close()
         flash("Physical Bullion is calculated from bullion holdings. Add/remove items from the Bullion page.")
         return redirect(url_for("bullion"))
+    if is_auto_managed_account(account):
+        conn.close()
+        flash("This account is managed automatically by an external provider and cannot be edited manually.")
+        return redirect(url_for("accounts"))
 
-    bonus_amount = 0.0
-    if transaction_type == "add" and is_lifetime_isa(account):
-        bonus_amount = round(amount * 0.25, 2)
+    is_lisa_deposit = transaction_type == "add" and is_lifetime_isa(account)
 
     conn.execute(
         "INSERT INTO transactions (account_id, transaction_type, amount, note) VALUES (?, ?, ?, ?)",
         (account_id, transaction_type, signed_amount, note),
     )
 
-    if bonus_amount:
-        conn.execute(
-            "INSERT INTO transactions (account_id, transaction_type, amount, note) VALUES (?, 'value_update', ?, ?)",
-            (account_id, bonus_amount, "Lifetime ISA 25% government bonus treated as growth"),
-        )
-
-    total_account_change = signed_amount + bonus_amount
-    conn.execute("UPDATE accounts SET current_value = current_value + ? WHERE id = ?", (total_account_change, account_id))
+    conn.execute("UPDATE accounts SET current_value = current_value + ? WHERE id = ?", (signed_amount, account_id))
     conn.commit()
     take_snapshot(conn)
     conn.close()
 
-    if bonus_amount:
-        flash(f"Transaction saved. Lifetime ISA bonus of {format_money(bonus_amount)} added as growth.")
+    if is_lisa_deposit:
+        flash("Lifetime ISA deposit saved. The 25% government bonus has not been added automatically; update the total value when the bonus actually arrives.")
     else:
         flash("Transaction saved.")
     return redirect(request.referrer or url_for("dashboard"))
@@ -1542,7 +1981,7 @@ def transactions():
         LIMIT 200
         """
     ).fetchall()
-    accounts = conn.execute("SELECT * FROM accounts WHERE COALESCE(is_archived, 0) = 0 AND account_type != 'Physical Bullion' ORDER BY name").fetchall()
+    accounts = conn.execute("SELECT * FROM accounts WHERE COALESCE(is_archived, 0) = 0 AND account_type != 'Physical Bullion' AND COALESCE(is_auto_managed, 0) = 0 AND COALESCE(source_provider, '') = '' ORDER BY name").fetchall()
     conn.close()
     return render_template("transactions.html", transactions=rows, accounts=accounts)
 
@@ -1560,13 +1999,14 @@ def pension_dashboard():
     conn = get_db()
     rows, summary = performance_rows(conn, pension_only=True)
     monthly = monthly_performance(conn, pension_only=True)
-    pension_accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND account_type = 'Pension' ORDER BY name").fetchall()
+    pension_accounts = conn.execute("SELECT * FROM accounts WHERE include_in_net_worth = 1 AND COALESCE(is_archived, 0) = 0 AND COALESCE(term_type, '') != 'Ignore' AND account_type = 'Pension' ORDER BY name").fetchall()
     snapshots = conn.execute(
         """
         SELECT s.snapshot_date, SUM(s.value) AS total
         FROM snapshots s
         JOIN accounts a ON a.id = s.account_id
         WHERE a.account_type = 'Pension'
+          AND COALESCE(a.term_type, '') != 'Ignore'
         GROUP BY s.snapshot_date
         ORDER BY s.snapshot_date
         """
@@ -1577,6 +2017,7 @@ def pension_dashboard():
         FROM transactions t
         JOIN accounts a ON a.id = t.account_id
         WHERE a.account_type = 'Pension'
+          AND COALESCE(a.term_type, '') != 'Ignore'
         ORDER BY t.created_at DESC
         LIMIT 8
         """
@@ -1612,7 +2053,9 @@ def update_account_term():
         conn.close()
         flash("Account not found.")
         return redirect(url_for("accounts"))
-
+    # Auto-managed accounts keep their provider-owned value, but the dashboard bucket
+    # is still a local preference. Allow changing the Type dropdown for rows such
+    # as Trading 212 ISA (Auto).
     conn.execute("UPDATE accounts SET term_type = ? WHERE id = ?", (term_type, account_id))
     conn.commit()
     conn.close()
@@ -1637,6 +2080,10 @@ def update_account_value():
         conn.close()
         flash("Physical Bullion is calculated from bullion holdings and metal prices.")
         return redirect(url_for("bullion"))
+    if is_auto_managed_account(account):
+        conn.close()
+        flash("This account is managed automatically by an external provider and cannot be edited manually.")
+        return redirect(url_for("accounts"))
 
     old_value = float(account["current_value"] or 0)
     delta = round(new_value - old_value, 2)
@@ -1670,6 +2117,10 @@ def archive_account():
     if account["account_type"] == "Physical Bullion":
         conn.close()
         flash("Physical Bullion is calculated from bullion holdings and cannot be deleted from Accounts.")
+        return redirect(url_for("accounts"))
+    if is_auto_managed_account(account):
+        conn.close()
+        flash("This account is managed automatically. Disable the integration if you no longer want it refreshed.")
         return redirect(url_for("accounts"))
 
     conn.execute(
@@ -1946,17 +2397,21 @@ def delete_couple_budget_item(item_id):
 def property_page():
     conn = get_db()
     conn.execute("INSERT OR IGNORE INTO property_settings (id, home_value, mortgage_left) VALUES (1, 0, 0)")
+    property_columns = [row["name"] for row in conn.execute("PRAGMA table_info(property_settings)").fetchall()]
+    if "include_in_net_worth" not in property_columns:
+        conn.execute("ALTER TABLE property_settings ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1")
     conn.commit()
 
     if request.method == "POST":
         home_value = float(request.form.get("home_value") or 0)
         mortgage_left = float(request.form.get("mortgage_left") or 0)
+        include_in_net_worth = 1 if request.form.get("include_in_net_worth") == "1" else 0
         conn.execute(
             """
-            INSERT OR REPLACE INTO property_settings (id, home_value, mortgage_left, updated_at)
-            VALUES (1, ?, ?, CURRENT_TIMESTAMP)
+            INSERT OR REPLACE INTO property_settings (id, home_value, mortgage_left, include_in_net_worth, updated_at)
+            VALUES (1, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
-            (home_value, mortgage_left),
+            (home_value, mortgage_left, include_in_net_worth),
         )
         conn.commit()
         flash("Property values updated.")
@@ -1964,6 +2419,7 @@ def property_page():
     prop = conn.execute("SELECT * FROM property_settings WHERE id = 1").fetchone()
     home_value = float(prop["home_value"] or 0)
     mortgage_left = float(prop["mortgage_left"] or 0)
+    include_in_net_worth = bool(int(prop["include_in_net_worth"] or 0)) if "include_in_net_worth" in prop.keys() else True
     equity = home_value - mortgage_left
     loan_to_value = (mortgage_left / home_value * 100) if home_value else 0
     equity_pct = (equity / home_value * 100) if home_value else 0
@@ -1976,12 +2432,14 @@ def property_page():
         equity=round(equity, 2),
         loan_to_value=round(loan_to_value, 2),
         equity_pct=round(equity_pct, 2),
+        include_in_net_worth=include_in_net_worth,
     )
 
 
 @app.route("/compound-interest", methods=["GET", "POST"])
 def compound_interest():
     conn = get_db()
+    trading212_reconcile_auto_account_from_cache(conn)
     accounts = compound_accounts(conn)
 
     def setting_float(key, default):
@@ -2086,6 +2544,7 @@ def compound_interest():
 @app.route("/trading212")
 def trading212_page():
     conn = get_db()
+    trading212_reconcile_auto_account_from_cache(conn)
     settings = trading212_get_settings(conn)
     holdings = conn.execute("SELECT * FROM trading212_holdings ORDER BY current_value DESC, ticker").fetchall()
     logs = conn.execute("SELECT * FROM trading212_sync_log ORDER BY synced_at DESC, id DESC LIMIT 10").fetchall()
@@ -2113,8 +2572,8 @@ def trading212_update_settings():
     environment = request.form.get("environment", "demo")
     if environment not in {"demo", "live"}:
         environment = "demo"
-    target_account_name = request.form.get("target_account_name", "Stocks and Shares ISA").strip() or "Stocks and Shares ISA"
-    auto_update_account = 1 if request.form.get("auto_update_account") == "1" else 0
+    target_account_name = TRADING212_AUTO_ACCOUNT_NAME
+    auto_update_account = 1
     api_key = request.form.get("api_key", "").strip()
     api_secret = request.form.get("api_secret", "").strip()
     conn = get_db()
@@ -2211,11 +2670,102 @@ def settings():
         "t212_settings": t212_settings,
         "t212_logs": t212_logs,
         "t212_accounts": t212_accounts,
+        "t212_auto_account_name": TRADING212_AUTO_ACCOUNT_NAME,
+        "t212_auto_account_type": TRADING212_AUTO_ACCOUNT_TYPE,
         "t212_credentials_present": trading212_credentials_present(conn),
         "t212_saved_credentials_present": bool(("api_key" in t212_settings.keys() and t212_settings["api_key"]) and ("api_secret" in t212_settings.keys() and t212_settings["api_secret"])),
+        "database_path": os.path.relpath(DB_NAME, APP_DIR),
+        "database_backups": list_database_backups(),
+        "database_undo": get_undo_status(),
     }
     conn.close()
     return render_template("settings.html", **values)
+
+
+@app.route("/settings/database/backup", methods=["POST"])
+def database_backup():
+    backup_path = create_database_backup("manual")
+    if backup_path:
+        flash(f"Database backup created: {os.path.basename(backup_path)}")
+    else:
+        flash("No database found to back up yet.")
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/database/import", methods=["POST"])
+def database_import():
+    uploaded = request.files.get("database_file")
+    if not uploaded or uploaded.filename == "":
+        flash("Choose a finance.db file to import.")
+        return redirect(url_for("settings"))
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
+        uploaded.save(temp_file.name)
+        temp_path = temp_file.name
+
+    try:
+        ok, message = validate_sqlite_database(temp_path)
+        if not ok:
+            flash(f"Import cancelled. Database integrity check failed: {message}")
+            return redirect(url_for("settings"))
+
+        create_database_backup("pre_import")
+        replace_current_database(temp_path)
+        init_db()
+        flash("Database imported successfully. A pre-import backup was created first.")
+    except Exception as exc:
+        flash(f"Database import failed: {exc}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/database/restore", methods=["POST"])
+def database_restore():
+    filename = os.path.basename(request.form.get("backup_filename", ""))
+    valid_backups = {item["filename"] for item in list_database_backups()}
+    if filename not in valid_backups:
+        flash("Select a valid database backup to restore.")
+        return redirect(url_for("settings"))
+
+    backup_path = os.path.join(DB_BACKUP_DIR, filename)
+    try:
+        create_database_backup("pre_restore")
+        replace_current_database(backup_path)
+        init_db()
+        flash(f"Database restored from {filename}. A pre-restore backup was created first.")
+    except Exception as exc:
+        flash(f"Database restore failed: {exc}")
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/database/undo", methods=["POST"])
+def database_undo():
+    undo_path = os.path.join(DB_UNDO_DIR, "last_before_action.db")
+    if not os.path.exists(undo_path):
+        flash("No undo point is available yet.")
+        return redirect(url_for("settings"))
+
+    try:
+        create_database_backup("pre_undo")
+        replace_current_database(undo_path)
+        init_db()
+        flash("Last database action undone. A pre-undo backup was created first.")
+    except Exception as exc:
+        flash(f"Undo failed: {exc}")
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/database/download/<path:filename>")
+def database_download_backup(filename):
+    filename = os.path.basename(filename)
+    valid_backups = {item["filename"] for item in list_database_backups()}
+    if filename not in valid_backups:
+        flash("Backup not found.")
+        return redirect(url_for("settings"))
+    return send_file(os.path.join(DB_BACKUP_DIR, filename), as_attachment=True, download_name=filename)
+
 
 
 @app.route("/snapshot", methods=["POST"])

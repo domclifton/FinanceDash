@@ -665,3 +665,15 @@ html[data-theme="dark"] .mobile-brand{color:var(--text)}
         font-size:clamp(1.05rem, 5vw, 1.35rem)!important;
     }
 }
+
+
+/* v2.8.0 Settings database tools */
+.compact-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+.soft-card{background:rgba(248,250,252,.9);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow-soft);}
+.soft-card h5{margin-bottom:6px;}
+.database-panel code{font-size:12px;white-space:normal;word-break:break-all;}
+.database-panel .table td,.database-panel .table th{vertical-align:middle;}
+@media(max-width:1000px){.compact-grid{grid-template-columns:1fr!important;}}
+
+/* v2.8.4 account/source badges */
+.auto-badge{font-style:normal!important;font-weight:800!important;letter-spacing:0!important;}
