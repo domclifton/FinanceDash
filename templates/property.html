@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Home equity</p>
+        <h1>Property</h1>
+    </div>
+</div>
+
+<div class="metric-grid">
+    <div class="metric-card accent"><span>Current Home Value</span><strong>{{ home_value|money }}</strong></div>
+    <div class="metric-card"><span>Left on Mortgage</span><strong>{{ mortgage_left|money }}</strong></div>
+    <div class="metric-card"><span>Home Equity</span><strong class="{{ 'positive' if equity >= 0 else 'negative' }}">{{ equity|money }}</strong><small>{{ 'Included in net worth' if include_in_net_worth else 'Ignored from net worth' }}</small></div>
+    <div class="metric-card"><span>Loan to Value</span><strong>{{ '%.2f'|format(loan_to_value) }}%</strong><small>Equity {{ '%.2f'|format(equity_pct) }}%</small></div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-5">
+        <section class="panel">
+            <h5>Update Property Values</h5>
+            <form method="post" action="{{ url_for('property.property_page') }}" class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Current home value</label>
+                    <input class="form-control" type="number" step="0.01" name="home_value" value="{{ '%.2f'|format(home_value) }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Left on mortgage</label>
+                    <input class="form-control" type="number" step="0.01" name="mortgage_left" value="{{ '%.2f'|format(mortgage_left) }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Net worth treatment</label>
+                    <select class="form-select" name="include_in_net_worth">
+                        <option value="1" {% if include_in_net_worth %}selected{% endif %}>Include in total net worth</option>
+                        <option value="0" {% if not include_in_net_worth %}selected{% endif %}>Ignore from total net worth</option>
+                    </select>
+                    <p class="small-help mt-1 mb-0">Ignore keeps the property page values but excludes property equity from dashboard totals and allocation.</p>
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-primary w-100">Save Property Values</button>
+                </div>
+            </form>
+            <p class="small-help mt-3">Equity is calculated as current home value minus the remaining mortgage balance.</p>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="panel">
+            <h5>Equity Breakdown</h5>
+            <div class="property-bar mb-3">
+                {% set equity_width = [equity_pct, 0]|max %}
+                {% set mortgage_width = [loan_to_value, 0]|max %}
+                <div class="property-bar-equity" style="width: {{ [equity_width, 100]|min }}%"></div>
+                <div class="property-bar-mortgage" style="width: {{ [mortgage_width, 100]|min }}%"></div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="mini-stat">
+                        <span>Owned by you</span>
+                        <strong>{{ equity|money }}</strong>
+                        <small>{{ '%.2f'|format(equity_pct) }}% equity</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mini-stat">
+                        <span>Owned by lender</span>
+                        <strong>{{ mortgage_left|money }}</strong>
+                        <small>{{ '%.2f'|format(loan_to_value) }}% LTV</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

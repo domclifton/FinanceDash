@@ -1,0 +1,16 @@
+[Unit]
+Description=InvestHome Finance Tracker
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/investhome
+EnvironmentFile=/opt/investhome/.env
+ExecStart=/opt/investhome/venv/bin/python /opt/investhome/app.py
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title-block">
+    <div>
+        <h1>Debts</h1>
+        <p>Track credit cards, loans, finance agreements and other liabilities separately from your asset accounts.</p>
+    </div>
+</div>
+
+<div class="modern-kpi-grid debt-kpi-grid">
+    <section class="kpi-card">
+        <div class="kpi-icon red">−</div>
+        <div>
+            <span>Included Debt</span>
+            <strong>{{ total_debt|money }}</strong>
+            <small>Subtracts from net worth</small>
+        </div>
+    </section>
+    <section class="kpi-card">
+        <div class="kpi-icon blue">✓</div>
+        <div>
+            <span>Planned Monthly Payments</span>
+            <strong>{{ planned_payment|money }}</strong>
+            <small>Across included debts</small>
+        </div>
+    </section>
+    <section class="kpi-card">
+        <div class="kpi-icon amber">%</div>
+        <div>
+            <span>Highest APR</span>
+            <strong>{{ '%.2f'|format(highest_apr) }}%</strong>
+            <small>Useful for avalanche method</small>
+        </div>
+    </section>
+    <section class="kpi-card">
+        <div class="kpi-icon green">⌛</div>
+        <div>
+            <span>Estimated Payoff</span>
+            <strong>
+                {% if payoff_months %}
+                    {{ payoff_months }} months
+                {% elif payoff_status == 'unreachable' %}
+                    Payment too low
+                {% else %}
+                    Set payments
+                {% endif %}
+            </strong>
+            <small>
+                {% if payoff_status == 'unreachable' %}
+                    No planned payment, or payment does not cover interest, on at least one included debt
+                {% else %}
+                    Includes APR where entered; estimate only
+                {% endif %}
+            </small>
+        </div>
+    </section>
+</div>
+
+<section class="glass-card mt-3 debt-add-card">
+    <div class="panel-title">
+        <h3>Add Debt</h3>
+        <span class="pill">Liability</span>
+    </div>
+    <form method="post" action="{{ url_for('debts.add_debt') }}" class="debt-add-grid">
+        <div>
+            <label>Name</label>
+            <input class="form-control" name="name" placeholder="Credit card, car finance, loan" required>
+        </div>
+        <div>
+            <label>Type</label>
+            <select class="form-select" name="debt_type">
+                {% for debt_type in debt_types %}<option value="{{ debt_type }}">{{ debt_type }}</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Balance</label>
+            <input class="form-control" type="number" step="0.01" name="current_balance" placeholder="0.00">
+        </div>
+        <div>
+            <label>APR %</label>
+            <input class="form-control" type="number" step="0.01" name="apr" placeholder="0.00">
+        </div>
+        <div>
+            <label>Minimum Payment</label>
+            <input class="form-control" type="number" step="0.01" name="minimum_payment" placeholder="0.00">
+        </div>
+        <div>
+            <label>Planned Payment</label>
+            <input class="form-control" type="number" step="0.01" name="planned_payment" placeholder="0.00">
+        </div>
+        <div>
+            <label>Due Day</label>
+            <input class="form-control" type="number" min="1" max="31" name="due_day" placeholder="1-31">
+        </div>
+        <div>
+            <label>Net Worth</label>
+            <select class="form-select" name="include_in_net_worth">
+                <option value="1" selected>Include</option>
+                <option value="0">Ignore</option>
+            </select>
+        </div>
+        <div class="debt-note-field">
+            <label>Note</label>
+            <input class="form-control" name="note" placeholder="Optional">
+        </div>
+        <div class="debt-add-action">
+            <button class="btn btn-primary w-100">Add Debt</button>
+        </div>
+    </form>
+</section>
+
+<section class="glass-card mt-3">
+    <div class="panel-title">
+        <h3>Debt List</h3>
+        <span class="pill">{{ debts|length }} tracked</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle debt-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Balance</th>
+                    <th>APR</th>
+                    <th>Minimum</th>
+                    <th>Planned</th>
+                    <th>Due</th>
+                    <th>Net Worth</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for debt in debts %}
+                <tr>
+                    <td>
+                        <form id="debt-update-{{ debt.id }}" method="post" action="{{ url_for('debts.update_debt', debt_id=debt.id) }}"></form>
+                        <input form="debt-update-{{ debt.id }}" class="form-control form-control-sm" name="name" value="{{ debt.name }}">
+                    </td>
+                    <td>
+                        <select form="debt-update-{{ debt.id }}" class="form-select form-select-sm" name="debt_type">
+                            {% for debt_type in debt_types %}<option value="{{ debt_type }}" {% if debt.debt_type == debt_type %}selected{% endif %}>{{ debt_type }}</option>{% endfor %}
+                        </select>
+                    </td>
+                    <td><input form="debt-update-{{ debt.id }}" class="form-control form-control-sm" type="number" step="0.01" name="current_balance" value="{{ debt.current_balance }}"></td>
+                    <td><input form="debt-update-{{ debt.id }}" class="form-control form-control-sm" type="number" step="0.01" name="apr" value="{{ debt.apr }}"></td>
+                    <td><input form="debt-update-{{ debt.id }}" class="form-control form-control-sm" type="number" step="0.01" name="minimum_payment" value="{{ debt.minimum_payment }}"></td>
+                    <td><input form="debt-update-{{ debt.id }}" class="form-control form-control-sm" type="number" step="0.01" name="planned_payment" value="{{ debt.planned_payment }}"></td>
+                    <td><input form="debt-update-{{ debt.id }}" class="form-control form-control-sm" type="number" min="1" max="31" name="due_day" value="{{ debt.due_day or '' }}"></td>
+                    <td>
+                        <select form="debt-update-{{ debt.id }}" class="form-select form-select-sm" name="include_in_net_worth">
+                            <option value="1" {% if debt.include_in_net_worth %}selected{% endif %}>Include</option>
+                            <option value="0" {% if not debt.include_in_net_worth %}selected{% endif %}>Ignore</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select form="debt-update-{{ debt.id }}" class="form-select form-select-sm" name="status">
+                            <option value="Active" {% if debt.status == 'Active' %}selected{% endif %}>Active</option>
+                            <option value="Cleared" {% if debt.status == 'Cleared' %}selected{% endif %}>Cleared</option>
+                        </select>
+                    </td>
+                    <td class="debt-actions">
+                        <input form="debt-update-{{ debt.id }}" type="hidden" name="note" value="{{ debt.note or '' }}">
+                        <button form="debt-update-{{ debt.id }}" class="btn btn-primary btn-sm">Save</button>
+                        <form method="post" action="{{ url_for('debts.archive_debt', debt_id=debt.id) }}">
+                            <button class="btn btn-outline-danger btn-sm">Archive</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="10" class="text-muted">No debts tracked yet. Add a credit card, loan or finance agreement above.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if ignored_debt > 0 %}
+    <p class="muted mb-0">Ignored debt currently tracked: {{ ignored_debt|money }}. Ignored debts stay visible here but do not reduce dashboard net worth.</p>
+    {% endif %}
+</section>
+{% endblock %}

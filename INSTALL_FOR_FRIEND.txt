@@ -1,0 +1,150 @@
+INVESTHOME FINANCE TRACKER v3.0.0-rc.1 - EASY INSTALL
+=================================================
+
+GitHub install:
+
+   git clone https://github.com/domclifton/InvestHome.git
+   cd InvestHome
+   chmod +x scripts/install.sh scripts/start.sh scripts/backup_db.sh
+   ./scripts/install.sh
+   ./scripts/start.sh
+
+Manual install:
+
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   cp .env.example .env
+   python3 app.py
+
+Open it in a browser:
+
+   http://SERVER-IP:5000
+
+TRADING 212 OPTIONAL SETUP
+==========================
+
+Optional: add Trading 212 credentials in Settings → Trading 212 Connection after first launch.
+Credentials are saved in the application settings and can be overwritten from the same page. Sync creates/updates Trading 212 ISA (Auto) in Account Balances, which has a read-only synced value and is included in totals unless its Type is set to Ignore.
+
+UPDATING FROM AN OLDER VERSION
+==============================
+
+Keep these files:
+
+   data/finance.db
+   .env
+
+Before updating:
+
+   ./scripts/backup_db.sh
+
+Then overwrite/pull the app files and restart.
+
+RESETTING THE APP
+=================
+
+To start from fresh data:
+
+   rm data/finance.db
+   python3 app.py
+
+DO NOT COMMIT
+=============
+
+Do not commit:
+
+   .env
+   data/finance.db
+
+These are already ignored by .gitignore.
+
+
+Database notes for v3.0.0-rc.1:
+- The app stores the live SQLite database at data/finance.db.
+- If an older root-level finance.db exists, the app moves it into data/ on first launch.
+- Backups, imports, restores and undo-last-action are available from Settings -> Database.
+
+Data/display notes for v3.0.0-rc.1:
+- Accounts page Type now includes Ignore. Ignored accounts remain visible but are excluded from dashboard statistics.
+- Trading 212 ISA (Auto) value remains managed by the API, but its dashboard Type can be changed locally.
+- Property page can include or ignore property equity in total net worth.
+
+
+UI notes for v3.0.0-rc.1:
+- Dashboard bucket cards now list the account names assigned to each Type.
+- Manual account names can be edited inline from Account Balances.
+- Take Snapshot is now in the left sidebar under the All data is synced card.
+- The version number is now displayed at the bottom-left of the sidebar.
+
+
+Progress notes for v3.0.0-rc.1:
+- New Progress page shows milestones, savings streaks, UK benchmark cards and badges.
+- Badges are calculated from existing local data and live on the same Progress page.
+- Progress Settings can be adjusted from the Progress page.
+
+
+Debt notes for v3.0.0-rc.1:
+- Use the Debts page for credit cards, loans, finance agreements, overdrafts and BNPL balances.
+- Debts marked Include reduce the dashboard net worth.
+- Debts marked Ignore stay visible on the Debts page but do not affect net worth.
+
+Progress notes for v3.0.0-rc.1:
+- Progress Settings now explain each field.
+- The honesty reminder is playful only; accurate inputs make the gamified progress more useful.
+
+
+Backend refactor notes for v3.0.0-rc.1:
+- This is the fourth v3 alpha release.
+- Configuration constants live in config.py.
+- Backup, restore, import, undo and database storage helpers live in services/backups.py.
+- Smoke tests live under tests/.
+- Trading 212 API/cache/account-sync logic now lives in services/trading212.py.
+- No UI or database behaviour changes are intended in this alpha.
+
+
+Smoke tests for developers
+--------------------------
+
+To run the lightweight test suite after making backend changes:
+
+```bash
+pip install -r requirements-dev.txt
+python3 -m pytest
+```
+
+
+Database layer notes for v3.0.0-rc.1:
+- Database connection setup, migrations, indexes and settings helpers now live in db.py.
+- Existing install/runtime behaviour is intended to remain unchanged.
+- GoldAPI can now be configured from Settings → Metal Pricing. `.env` `GOLDAPI_KEY` remains as an optional fallback.
+
+
+Route refactor notes for v3.0.0-rc.1:
+- Debts routes now live in routes/debts.py.
+- Debt summary/type helper logic now lives in services/debts.py.
+- URL paths remain unchanged.
+- No manual install changes are required.
+
+
+Route refactor notes for v3.0.0-rc.1:
+- Progress route has been moved into routes/progress.py.
+- Public URL remains /progress.
+- No database schema, UI, or calculation changes are intended.
+
+GoldAPI notes for v3.0.0-rc.1:
+- Enter/update the GoldAPI key from Settings → Metal Pricing.
+- The saved Settings key is used first; `.env` is only a fallback.
+- Manual metal prices are still used if live pricing is disabled or unavailable.
+
+
+GoldAPI cache notes for v3.0.0-rc.1:
+- GoldAPI can still be configured from Settings → Metal Pricing.
+- Normal page loads use cached prices instead of repeatedly calling GoldAPI.
+- Use Sync Metal Prices Now when you want an immediate refresh.
+- Choose Manual only, Every 12 hours or Daily from the auto-refresh dropdown.
+
+
+## v3.0.0-rc.1
+
+Trading 212 remains manual-sync. Settings now notes that auto sync is not enabled because the Trading 212 API is still in beta.

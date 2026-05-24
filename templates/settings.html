@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><div><p class="eyebrow">Configuration</p><h1>Settings</h1><p class="subtle mb-0">App-wide settings, integrations, and sync logs.</p></div></div>
+
+
+<section class="panel mb-4 appearance-panel">
+    <div class="panel-title">
+        <h3>Appearance</h3>
+        <span class="pill">Theme: <span data-theme-current>Light</span></span>
+    </div>
+    <p class="muted">Choose the colour theme for this browser. Your preference is saved locally and applies across the app.</p>
+    <div class="theme-mode-switch" role="group" aria-label="Theme selection">
+        <button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="true">
+            <span class="theme-choice-icon">☀</span>
+            <span>Light</span>
+        </button>
+        <button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false">
+            <span class="theme-choice-icon">☾</span>
+            <span>Dark</span>
+        </button>
+    </div>
+</section>
+
+
+<section class="panel mb-4 database-panel">
+    <div class="panel-title">
+        <h3>Database</h3>
+        <span class="pill">{{ database_path }}</span>
+    </div>
+    <p class="muted">The live SQLite database is stored in <strong>{{ database_path }}</strong> so the main project folder stays clean. Use these tools before testing large imports or manual data changes.</p>
+
+    <div class="settings-grid compact-grid mb-3">
+        <div class="soft-card">
+            <h5>Undo Recent User Action</h5>
+            <p class="muted small mb-2">Keeps the last {{ database_undo.limit }} pre-action database copies, so one misclick does not wipe the only undo point.</p>
+            {% if database_undo.available %}
+                <form method="post" action="{{ url_for('settings.database_undo') }}" onsubmit="return confirm('Restore this undo point? A pre-undo backup will be created first.');">
+                    <label class="form-label small">Undo point</label>
+                    <select class="form-control mb-2" name="undo_filename">
+                        {% for point in database_undo.points %}
+                            <option value="{{ point.filename }}">{{ point.modified }} — {{ point.description }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-warning">Restore Selected Undo Point</button>
+                </form>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>No Undo Point Yet</button>
+            {% endif %}
+        </div>
+
+        <div class="soft-card">
+            <h5>Create Backup</h5>
+            <p class="muted small mb-2">Creates a dated backup file in <strong>data/backups</strong>. The app keeps the newest 30 backups automatically.</p>
+            <form method="post" action="{{ url_for('settings.database_backup') }}">
+                <button class="btn btn-primary">Backup finance.db</button>
+            </form>
+        </div>
+
+        <div class="soft-card">
+            <h5>Import Database</h5>
+            <p class="muted small mb-2">Import a replacement SQLite database. A pre-import backup is created first.</p>
+            <form method="post" action="{{ url_for('settings.database_import') }}" enctype="multipart/form-data" onsubmit="return confirm('Import this database and replace the current one? A pre-import backup will be created first.');">
+                <input class="form-control mb-2" type="file" name="database_file" accept=".db,.sqlite,.sqlite3" required>
+                <button class="btn btn-outline-primary">Import finance.db</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="backup-list-header">
+        <div>
+            <h5>Available Backups</h5>
+            <p class="muted small mb-0">Newest backups are shown in a contained scrollable list, so the Settings page stays compact.</p>
+        </div>
+        {% if database_backups %}<span class="pill">{{ database_backups|length }} backups</span>{% endif %}
+    </div>
+    {% if database_backups %}
+        <div class="table-responsive backup-list-scroll">
+            <table class="table align-middle">
+                <thead><tr><th>Filename</th><th>Created / Modified</th><th>Size</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    {% for backup in database_backups %}
+                    <tr>
+                        <td><code>{{ backup.filename }}</code></td>
+                        <td>{{ backup.modified }}</td>
+                        <td>{{ backup.size }}</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('settings.database_download_backup', filename=backup.filename) }}">Download</a>
+                                <form method="post" action="{{ url_for('settings.database_restore') }}" onsubmit="return confirm('Restore this database backup? A pre-restore backup will be created first.');">
+                                    <input type="hidden" name="backup_filename" value="{{ backup.filename }}">
+                                    <button class="btn btn-sm btn-danger">Restore</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted mb-0">No backups found yet. Create a backup to populate this list.</p>
+    {% endif %}
+</section>
+
+<section class="panel mb-4">
+    <h5>Metal Pricing</h5>
+    <p class="muted">Live metal prices use the GoldAPI key saved here first, then fall back to <code>GOLDAPI_KEY</code> from <code>.env</code>. Dashboard, Accounts, Bullion and snapshots use cached prices so page loads do not hammer GoldAPI.</p>
+    <form method="post" class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Manual gold £/g</label>
+            <input class="form-control" name="manual_gold_gbp_per_g" type="number" step="0.0001" value="{{ manual_gold_gbp_per_g }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Manual silver £/g</label>
+            <input class="form-control" name="manual_silver_gbp_per_g" type="number" step="0.0001" value="{{ manual_silver_gbp_per_g }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">GoldAPI key</label>
+            <input class="form-control" name="goldapi_key" type="password" autocomplete="off" placeholder="{% if goldapi_saved_key_present %}Saved — leave blank to keep current key{% else %}Paste GoldAPI key{% endif %}">
+            <div class="form-hint">Leave blank to keep the current saved key. The saved Settings key takes priority over <code>.env</code>.</div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Auto-refresh live prices</label>
+            <select class="form-select" name="goldapi_refresh_mode">
+                <option value="manual" {% if goldapi_refresh_mode == 'manual' %}selected{% endif %}>Manual only</option>
+                <option value="12h" {% if goldapi_refresh_mode == '12h' %}selected{% endif %}>Every 12 hours</option>
+                <option value="daily" {% if goldapi_refresh_mode == 'daily' %}selected{% endif %}>Daily</option>
+            </select>
+            <div class="form-hint">Cached prices are reused until this interval expires, unless you sync manually.</div>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="use_live_prices" {% if use_live_prices %}checked{% endif %}>
+                    <label class="form-check-label">Use live prices</label>
+                </div>
+                {% if goldapi_saved_key_present %}
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="clear_goldapi_key">
+                    <label class="form-check-label">Clear saved GoldAPI key</label>
+                </div>
+                {% endif %}
+                <button class="btn btn-primary w-100">Save Metal Settings</button>
+            </div>
+        </div>
+    </form>
+    <hr>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-9">
+            <p class="mb-1">GoldAPI configured: <strong>{{ 'Yes' if has_goldapi_key else 'No' }}</strong> <span class="muted">({{ goldapi_key_source }})</span></p>
+            <p class="mb-1">Price cache: <strong>{{ goldapi_cache.refresh_label if goldapi_cache else 'Daily' }}</strong> · Last sync: <strong>{{ goldapi_cache.last_sync_at if goldapi_cache else 'Never' }}</strong> · Next sync: <strong>{{ goldapi_cache.next_sync_at if goldapi_cache else 'Unknown' }}</strong></p>
+            <p class="mb-0 muted">{{ goldapi_cache.last_message if goldapi_cache else 'Cached prices will be used where available.' }}</p>
+            {% if goldapi_cache and goldapi_cache.has_cache %}
+                <p class="mb-0 muted">Cached prices: Gold £{{ '%.4f'|format(goldapi_cache.cached_gold) }}/g · Silver £{{ '%.4f'|format(goldapi_cache.cached_silver) }}/g</p>
+            {% endif %}
+        </div>
+        <div class="col-md-3 text-md-end">
+            <form method="post" action="{{ url_for('settings.goldapi_sync_now') }}">
+                <button class="btn btn-success w-100" {% if not has_goldapi_key or not use_live_prices %}disabled{% endif %}>Sync Metal Prices Now</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<div class="settings-grid">
+    <section class="panel">
+        <div class="panel-title"><h3>Trading 212 Connection</h3><span class="badge-soft blue">Read-only</span></div>
+        <p class="muted">Trading 212 settings live here now. The Trading 212 page is kept focused on synced holdings and portfolio data.</p>
+        <div class="read-only-note mb-3">ⓘ Auto sync is not enabled because the Trading 212 API is still in beta. Use <strong>Sync Now</strong> when you want to refresh the cached account and holdings data.</div>
+        {% if t212_settings.rate_limit_reset_at %}
+            <div class="soft-warning mb-3">Rate limited. Try again after <strong>{{ t212_settings.rate_limit_reset_at }}</strong>.</div>
+        {% endif %}
+        <form method="post" action="{{ url_for('trading212.trading212_update_settings') }}" class="connection-form">
+            <label>Environment</label>
+            <select class="form-select" name="environment"><option value="demo" {% if t212_settings.environment == 'demo' %}selected{% endif %}>Demo</option><option value="live" {% if t212_settings.environment == 'live' %}selected{% endif %}>Live</option></select>
+            <label>Account Balances row</label>
+            <div class="read-only-note">
+                Trading 212 sync automatically creates/updates <strong>{{ t212_auto_account_name }}</strong>
+                under <strong>{{ t212_auto_account_type }}</strong>. This row is read-only, marked Auto, and is recreated from cached sync data if an old manual Trading 212 account is deleted.
+            </div>
+            <label>API key</label>
+            <div>
+                <input class="form-control" name="api_key" type="password" autocomplete="off" placeholder="{% if t212_saved_credentials_present %}Saved — leave blank to keep current key{% else %}Paste Trading 212 API key{% endif %}">
+                <div class="form-hint">Enter a new key to overwrite the saved key. Leave blank to keep the current saved key.</div>
+            </div>
+            <label>API secret</label>
+            <div>
+                <input class="form-control" name="api_secret" type="password" autocomplete="off" placeholder="{% if t212_saved_credentials_present %}Saved — leave blank to keep current secret{% else %}Paste Trading 212 API secret{% endif %}">
+                <div class="form-hint">Enter a new secret to overwrite the saved secret. Secrets are hidden after saving and are never displayed back in the UI.</div>
+            </div>
+            <button class="btn btn-primary">Save Trading 212 Settings</button>
+        </form>
+        <div class="read-only-note">ⓘ This integration is read-only. Saved credentials are stored within the application settings.</div>
+        <div class="three-stat mt-3">
+            <div><span>Credentials</span><strong class="{{ 'positive' if t212_credentials_present else 'negative' }}">{{ 'Ready' if t212_credentials_present else 'Missing' }}</strong></div>
+            <div><span>Last Sync</span><strong class="small-value">{{ t212_settings.last_sync_at or 'Never' }}</strong></div>
+            <div><span>Mode</span><strong>{{ t212_settings.environment|capitalize }}</strong></div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+            <form method="post" action="{{ url_for('trading212.trading212_test_connection') }}"><button class="btn btn-outline-primary">Test Connection</button></form>
+            <form method="post" action="{{ url_for('trading212.trading212_sync_now') }}"><button class="btn btn-success">Sync Now</button></form>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-title"><h3>Trading 212 Sync Log</h3><span class="pill">Latest 12</span></div>
+        {% for log in t212_logs %}
+            <div class="sync-row"><span class="sync-check {{ 'ok' if log.status == 'success' else 'bad' }}">{{ '✓' if log.status == 'success' else '!' }}</span><div><strong>{{ log.status|capitalize }}</strong><small>{{ log.message }}</small></div><time>{{ log.synced_at }}</time></div>
+        {% else %}
+            <p class="muted mb-0">No sync logs yet.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

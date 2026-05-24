@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title-block">
+    <div>
+        <h1>Progress</h1>
+        <p>Track your milestones, streaks, badges and UK benchmark progress.</p>
+    </div>
+</div>
+
+<div class="progress-hero-grid">
+    <section class="kpi-card progress-score-card">
+        <div class="kpi-icon blue">★</div>
+        <div>
+            <span>Progress Score</span>
+            <strong>{{ progress_score }}/100</strong>
+            <small>{{ unlocked_badges|length }} badges unlocked</small>
+            <em>Built from emergency cover, saving streak, pension, monthly challenge and net worth progress.</em>
+        </div>
+    </section>
+
+    <section class="kpi-card">
+        <div class="kpi-icon green">£</div>
+        <div>
+            <span>Net Worth Milestone</span>
+            <strong>{{ total_net_worth|money }}</strong>
+            <small>{{ milestone.percent }}% to {{ milestone.target|money }}</small>
+            <div class="progress-line progress-mini"><span style="width: {{ milestone.percent }}%"></span></div>
+        </div>
+    </section>
+
+    <section class="kpi-card">
+        <div class="kpi-icon amber">🛡</div>
+        <div>
+            <span>Emergency Level</span>
+            <strong>Level {{ emergency_level }}/5</strong>
+            <small>{{ emergency_next.name }} target: {{ emergency_next.target|money }}</small>
+            <div class="progress-line progress-mini"><span style="width: {{ emergency_next_pct }}%"></span></div>
+        </div>
+    </section>
+
+    <section class="kpi-card">
+        <div class="kpi-icon purple">🔥</div>
+        <div>
+            <span>Savings Streak</span>
+            <strong>{{ savings_streak }} months</strong>
+            <small>{{ challenge_pct }}% of this month’s challenge</small>
+            <div class="progress-line progress-mini"><span style="width: {{ challenge_pct }}%"></span></div>
+        </div>
+    </section>
+</div>
+
+<div class="progress-layout mt-3">
+    <section class="glass-card progress-wide-card">
+        <div class="panel-title">
+            <h3>Your Financial Levels</h3>
+            <span class="pill">Auto-calculated</span>
+        </div>
+        <div class="progress-level-grid">
+            {% for level in levels %}
+            <div class="progress-level-card">
+                <div class="progress-level-header">
+                    <div>
+                        <strong>{{ level.label }}</strong>
+                        <small>{{ level.detail }}</small>
+                    </div>
+                    <span>Level {{ level.level }}/{{ level.max_level }}</span>
+                </div>
+                <div class="progress-line"><span style="width: {{ level.percent }}%"></span></div>
+                <div class="progress-level-footer">
+                    <span>{{ level.value|money }}</span>
+                    <span>{{ level.percent }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="glass-card monthly-challenge-card">
+        <div class="panel-title">
+            <h3>Monthly Challenge</h3>
+            <span class="pill">{{ challenge_pct }}%</span>
+        </div>
+        <p class="muted mb-2">This month’s positive account contributions compared with your chosen saving goal.</p>
+        <div class="challenge-value">{{ saved_this_month|money }} <span>/ {{ monthly_savings_goal|money }}</span></div>
+        <div class="progress-line"><span style="width: {{ challenge_pct }}%"></span></div>
+        <small class="muted d-block mt-2">Estimated savings rate: {{ savings_rate }}%</small>
+    </section>
+</div>
+
+<div class="progress-layout mt-3">
+    <section class="glass-card progress-wide-card">
+        <div class="panel-title">
+            <h3>UK Benchmarks</h3>
+            <span class="pill">Static / configurable</span>
+        </div>
+        <div class="benchmark-grid">
+            {% for item in benchmark_cards %}
+            <div class="benchmark-card">
+                <span>{{ item.title }}</span>
+                <strong>{{ item.your_value }}</strong>
+                <small>Benchmark: {{ item.benchmark }}</small>
+                <div class="progress-line"><span style="width: {{ item.percent }}%"></span></div>
+                <em>{{ item.caption }}</em>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="muted mt-3 mb-0">These are deliberately encouraging benchmarks. They are not a judgement — they are just context. The values can be updated later from ONS data or edited manually below.</p>
+    </section>
+
+    <section class="glass-card">
+        <div class="panel-title">
+            <h3>Progress Settings</h3>
+        </div>
+        <p class="honesty-note">Honesty mode: ON. Fudging the numbers only unlocks imaginary badges 😉</p>
+        <form method="post" class="progress-settings-form">
+            <div>
+                <label>Monthly essential expenses</label>
+                <small>Used to calculate how many months your emergency fund could cover.</small>
+                <input class="form-control" type="number" step="0.01" name="monthly_expenses" value="{{ monthly_expenses }}">
+            </div>
+
+            <div>
+                <label>Monthly savings goal</label>
+                <small>Used for your monthly challenge and savings progress badges.</small>
+                <input class="form-control" type="number" step="0.01" name="monthly_savings_goal" value="{{ monthly_savings_goal }}">
+            </div>
+
+            <div>
+                <label>UK wealth benchmark</label>
+                <small>Used as a comparison target on the UK Benchmarks card. You can manually update this from ONS data later.</small>
+                <input class="form-control" type="number" step="0.01" name="uk_net_worth_benchmark" value="{{ uk_net_worth_benchmark }}">
+            </div>
+
+            <div>
+                <label>UK savings rate benchmark %</label>
+                <small>Used to compare your monthly savings rate against a configurable UK benchmark percentage.</small>
+                <input class="form-control" type="number" step="0.1" name="uk_savings_rate_benchmark" value="{{ uk_savings_rate_benchmark }}">
+            </div>
+
+            <button class="btn btn-primary mt-2">Save Progress Settings</button>
+        </form>
+    </section>
+</div>
+
+<section class="glass-card mt-3">
+    <div class="panel-title">
+        <h3>Badges</h3>
+        <span class="pill">{{ unlocked_badges|length }} unlocked / {{ badges|length }}</span>
+    </div>
+
+    <h6 class="badge-section-title">Unlocked</h6>
+    <div class="badge-grid">
+        {% for badge in unlocked_badges %}
+        <div class="finance-badge unlocked">
+            <div class="badge-icon">{{ badge.icon }}</div>
+            <strong>{{ badge.title }}</strong>
+            <span>{{ badge.description }}</span>
+            <small>Unlocked</small>
+        </div>
+        {% else %}
+        <p class="muted">No badges unlocked yet. Add your first values and snapshots to start unlocking progress.</p>
+        {% endfor %}
+    </div>
+
+    <h6 class="badge-section-title mt-4">In Progress</h6>
+    <div class="badge-grid">
+        {% for badge in in_progress_badges %}
+        <div class="finance-badge locked">
+            <div class="badge-icon">🔒</div>
+            <strong>{{ badge.title }}</strong>
+            <span>{{ badge.progress_text }}</span>
+            <div class="progress-line"><span style="width: {{ badge.percent }}%"></span></div>
+            <small>{{ badge.percent }}% complete</small>
+        </div>
+        {% else %}
+        <p class="muted">All first-draft badges are unlocked.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

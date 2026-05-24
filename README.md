@@ -1,59 +1,176 @@
-# InvestHome Finance Tracker v2.8.4
+# InvestHome
 
-> **AI SLOP WARNING**  
-> Built by a Network Engineer who has no business pretending to be a full-stack developer.
+**Single-user, self-hosted personal finance dashboard for homelab use.**
 
-InvestHome is a self-hosted personal finance dashboard built with **Python**, **Flask** and **SQLite**. It is designed for homelab-style deployments where you want to own your own data and track the bits that most personal finance apps do not handle cleanly.
+InvestHome is a Flask + SQLite finance tracker designed for people who want to own their data, run the app locally, and track a full household/personal finance picture without using a hosted SaaS platform.
 
-
-## What it tracks
-
-- Total net worth across accessible assets, pension and property equity
-- Emergency, liquid, short-term, mid-term, long-term and ignored account buckets
-- Stocks and Shares ISA performance
-- Lifetime ISA performance, with provider bonus/value changes treated as growth once they actually appear
-- Pension tracking on a separate long-term view
-- Physical bullion with optional live gold/silver pricing
-- Property value, mortgage remaining and equity
-- Budget calculator with Solo/Couple modes
-- Compound interest projections
-- Trading 212 read-only holdings sync, including GBX-to-GBP handling
-
-## Current version
+Current release candidate:
 
 ```text
-v2.8.4
+v3.0.0-rc.1
 ```
 
-Highlights in this version:
+> Built as a pragmatic self-hosted finance tracker first. This is not financial advice, and you should verify calculations before making real financial decisions from them.
 
-- Runtime database moved from the project root to `data/finance.db`
-- Existing root-level `finance.db` files are migrated automatically on first launch
-- Settings now includes a Database subsection for backup, import, restore and undo-last-action
-- Database backups are stored in `data/backups` with date-stamped filenames
-- Undo support stores a pre-action copy in `data/undo` before user POST actions
-- Packaged folder is versioned as `investhome-v2.8.4`
-- Modern light InvestHome UI
-- Safe page prefetching for faster navigation
-- Trading 212 sync remains manual to avoid API rate limits
-- Trading 212 sync now creates/updates `Trading 212 ISA (Auto)` instead of targeting manual account rows
-- API-managed account values are read-only on the Accounts page and contribute to dashboard/net-worth totals unless their Type is set to `Ignore`
-- Accounts can be marked with Type `Ignore` to keep them visible in Account Balances while excluding them from dashboard statistics
-- Trading 212 ISA (Auto) keeps its synced value read-only, but its dashboard Type can now be changed using the same dropdown as manual accounts
-- Property page now has Include/Ignore control for whether property equity appears in total net worth
-- Version number displayed under the snapshot button
-- `CHANGELOG.txt` included for release history
+---
 
-## Quick install
+## Screenshots
+
+### Dashboard
+
+![InvestHome dashboard](docs/screenshots/dashboard.png)
+
+### Core tracking pages
+
+| Accounts | Performance |
+|---|---|
+| ![Accounts page](docs/screenshots/accounts.png) | ![Performance page](docs/screenshots/performance.png) |
+
+| Pension | Bullion |
+|---|---|
+| ![Pension page](docs/screenshots/pension.png) | ![Bullion page](docs/screenshots/bullion.png) |
+
+| Property | Budget |
+|---|---|
+| ![Property page](docs/screenshots/property.png) | ![Budget page](docs/screenshots/budget.png) |
+
+| Debts | Compound Interest |
+|---|---|
+| ![Debts page](docs/screenshots/debts.png) | ![Compound interest page](docs/screenshots/compound-interest.png) |
+
+| Trading 212 | Progress |
+|---|---|
+| ![Trading 212 page](docs/screenshots/trading212.png) | ![Progress page](docs/screenshots/progress.png) |
+
+### Settings and database tools
+
+![Settings page](docs/screenshots/settings.png)
+
+---
+
+## What InvestHome tracks
+
+- **Net worth dashboard** across cash, investments, pension, property equity, bullion and debts.
+- **Account balances** with bucket types such as Emergency, Short Term, Mid Term, Long Term and Ignore.
+- **Transactions and snapshots** so changes over time can be charted.
+- **Investment performance** with contribution-aware growth calculations.
+- **Pension tracking** as a separate long-term view.
+- **Physical bullion** with optional GoldAPI-powered live gold/silver pricing.
+- **Property value, mortgage remaining and equity**, with an option to include or ignore property in net worth.
+- **Solo and couple budgeting** with assigned/floating totals.
+- **Debt/liability tracking** for credit cards, loans, car finance, overdrafts, BNPL and other finance agreements.
+- **Compound interest projections** for pension, LISA and Stocks & Shares ISA style goals.
+- **Trading 212 read-only sync**, creating an auto-managed account balance row.
+- **Progress/gamification page** with milestones, savings streaks, badges and configurable UK benchmark values.
+- **Database tools** for backup, restore, import and undo points.
+
+---
+
+## v3.0.0 release candidate highlights
+
+The v3 work was a backend refactor and long-term hardening pass. The frontend is intentionally mostly unchanged from the late v2 builds.
+
+### Backend refactor
+
+- Added `config.py` for app constants, paths and provider defaults.
+- Added `db.py` for SQLite setup, migrations, indexes and shared DB helpers.
+- Added `utils.py` for shared small helpers such as safe numeric parsing.
+- Extracted backup/database safety logic into `services/backups.py`.
+- Extracted Trading 212 logic into `services/trading212.py`.
+- Extracted performance chart/calculation logic into `services/performance.py`.
+- Extracted debt payoff/domain logic into `services/debts.py`.
+- Added Flask blueprints under `routes/` for Settings, Debts, Progress, Accounts, Budget, Property and Trading 212.
+- Added lightweight `pytest` smoke tests to protect future refactors.
+
+### Data safety and database tools
+
+- Runtime database lives in `data/finance.db`, not the project root.
+- Existing legacy root `finance.db` can be migrated automatically.
+- Settings page includes backup, restore, import and undo tools.
+- Backup list is scrollable and capped by retention policy.
+- Undo points use a small timestamped ring buffer instead of a single overwritten file.
+- SQLite indexes were added for transaction and snapshot hot paths.
+
+### API integrations
+
+- **GoldAPI** key can be managed from Settings → Metal Pricing.
+- `.env` `GOLDAPI_KEY` remains as a fallback.
+- GoldAPI prices are cached to reduce API calls and avoid rate limiting.
+- Manual metal-price sync is available from Settings.
+- Trading 212 remains manual-sync because the Trading 212 API is still in beta.
+- Trading 212 creates/updates `Trading 212 ISA (Auto)` as a read-only provider-managed account.
+
+### Finance logic improvements
+
+- Lifetime ISA contributions no longer automatically add the 25% bonus immediately; the bonus is only reflected once it actually appears in the account value.
+- Trading 212 values are reconciled consistently across Account Balances, Dashboard and Compound Interest.
+- Debt payoff estimate now uses APR-aware amortisation and flags payments that are too low to reduce the balance.
+- Account bucket cards show which account names make up each dashboard total.
+- Type `Ignore` can exclude accounts from dashboard/statistics while keeping them visible.
+
+---
+
+## Project structure
+
+```text
+investhome/
+├── app.py                  # Flask app setup, remaining routes/hooks and blueprint registration
+├── config.py               # Paths, version, constants and provider defaults
+├── db.py                   # SQLite connection helpers, schema, migrations and indexes
+├── utils.py                # Shared utility helpers
+├── routes/                 # Flask blueprints by feature area
+├── services/               # Domain/service logic
+├── templates/              # Flat Jinja templates
+├── static/                 # CSS and favicon
+├── data/                   # Runtime database/backups/undo points, ignored by git
+├── docs/                   # Deployment, test plan and screenshots
+├── scripts/                # Helper shell scripts
+├── systemd/                # Example systemd service
+└── tests/                  # Lightweight smoke tests
+```
+
+Runtime files that should not be committed:
+
+```text
+.env
+data/finance.db
+data/backups/*.db
+data/undo/*.db
+```
+
+---
+
+## Requirements
+
+- Debian/Ubuntu-style Linux recommended.
+- Python 3.11+ recommended.
+- SQLite, included with Python on most Linux installs.
+- Optional: systemd for service mode.
+- Optional: Nginx/Caddy/Traefik reverse proxy.
+
+Python dependencies are intentionally small:
+
+```text
+Flask
+requests
+python-dotenv
+Gunicorn for production-style service use
+pytest for smoke tests
+```
+
+---
+
+## Quick start: manual Flask run
 
 ```bash
 git clone https://github.com/domclifton/InvestHome.git
 cd InvestHome
 python3 -m venv venv
 source venv/bin/activate
+pip install --upgrade pip wheel
 pip install -r requirements.txt
 cp .env.example .env
-python3 app.py
+python app.py
 ```
 
 Open:
@@ -62,60 +179,28 @@ Open:
 http://SERVER-IP:5000
 ```
 
-## Easier install script
+---
+
+## Production-style run with Gunicorn
 
 ```bash
-chmod +x scripts/install.sh
-./scripts/install.sh
+cd /opt/investhome
+source venv/bin/activate
+pip install -r requirements-production.txt
+gunicorn --workers 3 --bind 0.0.0.0:8000 app:app
 ```
 
-Then start the app:
-
-```bash
-./scripts/start.sh
-```
-
-## Environment variables
-
-Copy the example file:
-
-```bash
-cp .env.example .env
-```
-
-Optional values:
-
-```env
-GOLDAPI_KEY=
-FLASK_SECRET_KEY=change-me
-```
-
-Trading 212 credentials are only needed if you want the read-only Trading 212 sync section. Enter them in Settings → Trading 212 Connection after launching the app. When synced, the app creates/updates `Trading 212 ISA (Auto)` in Account Balances.
-
-## Updating an existing install
-
-Keep these files:
+Open:
 
 ```text
-data/finance.db
-.env
+http://SERVER-IP:8000
 ```
 
-For older installs, if `finance.db` still exists in the project root, v2.8.4 will move it to `data/finance.db` automatically on first launch.
+---
 
-Then pull/copy the new app files over the top and restart Flask.
+## Run as a systemd service
 
-Before updating, back up your database:
-
-```bash
-./scripts/backup_db.sh
-```
-
-You can also create and restore dated backups from Settings → Database.
-
-## Running as a service
-
-A sample systemd unit is included here:
+A sample unit file is included:
 
 ```text
 systemd/investhome.service
@@ -130,38 +215,142 @@ Typical install path:
 Example:
 
 ```bash
-sudo cp systemd/investhome.service /etc/systemd/system/investhome.service
-sudo systemctl daemon-reload
-sudo systemctl enable investhome
-sudo systemctl start investhome
-sudo systemctl status investhome
+cp systemd/investhome.service /etc/systemd/system/investhome.service
+systemctl daemon-reload
+systemctl enable investhome
+systemctl start investhome
+systemctl status investhome
 ```
 
-Edit the paths inside the service file if your install path is different.
+Check logs:
 
-## Production note
+```bash
+journalctl -u investhome -f
+```
 
-`python3 app.py` runs Flask's development server. That is fine for homelab testing, but for a more production-like setup use a WSGI server such as Gunicorn behind Nginx, Caddy or Traefik.
+---
 
-See:
+## Configuration
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Common values:
+
+```env
+FLASK_SECRET_KEY=change-me
+GOLDAPI_KEY=
+```
+
+GoldAPI can also be configured in the web UI:
 
 ```text
-docs/DEPLOYMENT.md
+Settings → Metal Pricing
 ```
 
-## Data safety
+Trading 212 credentials are configured in:
 
-Do not commit these files:
+```text
+Settings → Trading 212 Connection
+```
+
+---
+
+## Database and backups
+
+InvestHome stores the live SQLite database here:
+
+```text
+data/finance.db
+```
+
+The Settings page provides:
+
+- manual backup creation
+- restore from backup
+- database import
+- undo recent user action
+- scrollable backup list
+- backup retention
+
+Command-line backup helper:
+
+```bash
+./scripts/backup_db.sh
+```
+
+---
+
+## Smoke tests
+
+Install dev dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+python3 -m pytest
+```
+
+The smoke tests are intentionally lightweight. They cover helper calculations, debt payoff logic, Trading 212 parsing and backup utility behaviour.
+
+---
+
+## Upgrade notes
+
+When upgrading an existing install, preserve:
 
 ```text
 .env
 data/finance.db
-data/backups/*.db
-data/undo/*.db
 ```
 
-They are ignored in `.gitignore`.
+If your older install still has `finance.db` in the project root, the app can move it to `data/finance.db` on startup.
+
+Before upgrading, create a backup from Settings → Database or run:
+
+```bash
+./scripts/backup_db.sh
+```
+
+Then replace the app files and restart the service.
+
+---
+
+## Roadmap to final v3.0.0
+
+`v3.0.0-rc.1` is intended for soak testing on a clean PVE/LXC container before final release.
+
+Remaining focus before final:
+
+- run the app for a while on a clean container
+- test database backup/restore/import/undo
+- test GoldAPI cached/manual sync
+- test Trading 212 manual sync
+- test core account/budget/debt/property workflows
+- remove any remaining packaging clutter
+- promote to `v3.0.0` once stable
+
+---
+
+## Security note
+
+InvestHome is designed for a trusted self-hosted environment. Do not expose it directly to the public internet without adding proper authentication and reverse-proxy protections.
+
+Recommended for wider access:
+
+- VPN-only access, or
+- reverse proxy authentication, or
+- a proper auth layer before public exposure
+
+---
 
 ## Disclaimer
 
-This is a personal finance tracker, not financial advice. Check calculations before relying on them for anything important.
+InvestHome is a personal finance tracking tool. It is not financial advice. Calculations should be checked before relying on them for important decisions.
